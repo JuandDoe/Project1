@@ -7,13 +7,22 @@ import io.fusionauth.http.server.HTTPHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.concurrent.CountDownLatch;
+
 public class Main {
     final static Logger logger = LoggerFactory.getLogger(Main.class);
 
+    public static void main(String[] args) throws InterruptedException {
 
+        final CountDownLatch latch = new CountDownLatch(2);
+        // logout or shutdown event
+        Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
+            @Override
+            public void run() {
+                latch.countDown();
+            }
+        }));
 
-
-    public static void main(String[] args) {
         int port = 42000;
 
         logger.info("Fuck off procrastination!");
@@ -30,7 +39,7 @@ public class Main {
                 res.setStatus(404);
                 res.setContentType("text/plain");
                 res.getWriter().write("Not Found");
-                logger.error("Not Found");
+                logger.info("Not Found");
             }
 
         };
@@ -39,12 +48,12 @@ public class Main {
                 .withListener(new HTTPListenerConfiguration(port))) {
             server.start();
             logger.info("Server started on port {} ", port);
-            Thread.currentThread().join();
-            // When this block exits, the server will be shutdown
+            latch.await();
 
         } catch (InterruptedException e) {
             logger.info("It seem as something fucked up!");
             throw new RuntimeException(e);
         }
+
     }
     }
