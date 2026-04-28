@@ -255,3 +255,154 @@ Other log level stay info as I dont have external monitoring or log system. But 
 
 - 1) Newt Time i must read message properly the error message and be humble toward him.  NOT REJECTING HYPOTHESIS I HAVEN4T TESTED
 - 2) I need to keep in mind the context/scope i'm working into ( Here : Gradle scope and what Gradle "see")
+
+
+_____________________________________________________________________________________________________________________________________________________________________________
+
+Part 2 – Gradle + repository authentication
+• Configure Gradle to fetch a dependency from:
+• a real private Maven repository or
+• a locally simulated one that requires authentication.
+• No hardcoded secrets in the repository.
+• Use environment variables or ~/.gradle/gradle.properties.
+
+Document:
+• what error you see when auth is wrong,
+• how you identified the root cause,
+• how you fixed it.
+
+- Lets google it!
+> set up maven private repo
+- Well browsing few results but feel as if I start reading what each techs solutions tell about themeself they will kidding me by all saying they are THE marvellous 3 legs unicorns out there. 
+- Goodl old dear stack : https://stackoverflow.com/questions/12410423/how-do-i-setup-a-private-remotely-accessible-maven-repository
+- Post from one year ago. Should still be a up to date solution : https://repsy.io/
+- ITS FREE; (very important as we are rats) - Anyway the scope of the exercice is about finding a tool and properly seted up. So, no problem to go "dirty", right ? 
+- Started set up : seem quite simple with few click through a GUI. Private repo seed up
+- Get an access token. create a folder no_push/ and a repsy.txt inside to store it . Exclude both from Git
+- Aded both the repo and file to .gitignore. Probably overkill/ redundant but who know it may avoid a typo or a single "ligne of failure" erased by an LLM in the futur
+
+- Walked a bit around the website and found something interesting : Using Repository with Gradle
+-  Well..well..well. Here the kind of problem I hate. Foud a good documentation, matching my tool... but half.
+
+> publishing {
+publications {
+maven(MavenPublication) {
+from components.java
+}
+}
+
+    repositories {
+        maven {
+            url 'https://repo.repsy.io/{MY REPSY USERNAME}/{MY REPOSITORY NAME}'
+            credentials {
+                username 'MY REPSY USERNAME'
+                password 'MY REPSY PASSWORD'
+            }
+        }
+    }
+- That seem as groovy syntax, which is legacy. We should use Kotlin. 
+- I was like.. well its easy I give my current gradle file to GPT and the groovy snipset, tell him i'm on graddle 9 + kotlin and he will do some magic.
+- Fail. It just circled in an error hello loop. Had some hope with Claude. Same ki,d of output.
+- I tried to cope few seconds  like.. well maybe we can go for obviously depreciated groovy.. So i just have to copy pasta the snipset (okay we are all cowards sometime)
+- jacklackofsurprise for Reddit just puted me back on hearth : https://www.reddit.com/r/groovy/comments/1e0t4ip/is_groovy_usage_growing_or_declining_now_what_is/
+> 2y ago
+  I mean, this Subreddit has 3.2k members and the last post before you was 22 days ago.... do the math.
+
+- Anyway the reviewer would probably have noticed I changed the stack. Or not, may have been a good test.. BUT we have to stay honest. Changin a stack for not using my brain is stupid.
+- Lets try using brain
+- Tired
+- Tried last desesperate moove : https://www.codeconvert.ai/groovy-to-kotlin-converter
+- Same output. Silently cried
+- CTRL +f "kotlin" on https://docs.repsy.io/maven/using-repository-with-gradle/ => 0 occurence
+
+- Okay let be honest at this point i'm a bit lost : 
+Was my maven repo choice a stupid one ? Liike.. maybe I chosed the first solution who seem free + okay and my mistake is there : mostly the tool choice
+- Maybe its fine and i'm a bit affraid of facing the idea to really understand graddle => kotlin conversion 
+
+- Found nothing revelant to my problem
+- Asked GPT something as : OKay, calm down I'm lost let get back to basics, logicaly
+- Checked gradle version
+  > gradle -v
+  openjdk version "21.0.10" 2026-01-20
+  OpenJDK Runtime Environment (build 21.0.10+7-Debian-1deb13u1)
+  OpenJDK 64-Bit Server VM (build 21.0.10+7-Debian-1deb13u1, mixed mode, sharing)
+
+------------------------------------------------------------
+Gradle 4.4.1
+------------------------------------------------------------
+
+Build time:   2012-12-21 00:00:00 UTC
+Revision:     none
+
+Groovy:       2.4.21
+Ant:          Apache Ant(TM) version 1.10.15 compiled on September 29 2024
+JVM:          21.0.10 (Debian 21.0.10+7-Debian-1deb13u1)
+OS:           Linux 6.12.73+deb13-amd64 amd64
+
+- 4.4.1... I think we found something :)
+- last version : 9.4.1 (18 Mar 2026) https://endoflife.date/gradle 
+- 4.4.1 : (04 Dec 2018) Ended 7 years ago (26 Nov 2018)
+> update gradle linux debian 13
+- Guess what ! https://unix.stackexchange.com/questions/805289/apt-get-install-gradle-puts-a-4-4-1-version-2012-for-java-8-which-cannot-be-i
+> The reason Debian doesn’t ship a newer version of gradle is that packaging Gradle 4.5 or newer requires Kotlin, as well as removing some proprietary dependencies that newer versions of Gradle rely on to build, and doing all of that with properly-aligned versions of all the dependencies is an enormous amount of work. There was progress last year but that seems to have stalled for the time being.
+-  Here we go : https://docs.gradle.org/current/userguide/installation.html
+- found something interesting on the gradle website 
+> ./gradlew wrapper --gradle-version latest 
+
+> ./gradlew wrapper --gradle-version latest
+openjdk version "21.0.10" 2026-01-20
+OpenJDK Runtime Environment (build 21.0.10+7-Debian-1deb13u1)
+OpenJDK 64-Bit Server VM (build 21.0.10+7-Debian-1deb13u1, mixed mode, sharing)
+Downloading https://services.gradle.org/distributions/gradle-4.4.1-bin.zip
+........................................................................
+Unzipping /home/ant/.gradle/wrapper/dists/gradle-4.4.1-bin/46gopw3g8i1v3zqqx4q949t2x/gradle-4.4.1-bin.zip to /home/ant/.gradle/wrapper/dists/gradle-4.4.1-bin/46gopw3g8i1v3zqqx4q949t2x
+Set executable permissions for: /home/ant/.gradle/wrapper/dists/gradle-4.4.1-bin/46gopw3g8i1v3zqqx4q949t2x/gradle-4.4.1/bin/gradle
+FAILURE: Build failed with an exception.
+
+- FUCK YOU STUPID ELEPHANT. I hope your specie will colapse
+- Why the hell latest still 4.1, I guess they just go hit the official debian 13 repo so it change nothing and i'm facing same problem
+
+- Okay i found https://snapcraft.io/gradle
+- But my understanding of flat sandboxing is very low ifk even if its a good path. Kepp calm. Lets keep it simple, stupid : Instal gradle 9 at system vide level
+
+- Sumarize all to GPT and simply get back to KISS : installing graddle 9 through graddle wrapper in my debian 13
+> gradle wrapper --gradle-version 9.5.0
+BUILD SUCCESSFUL in 0s
+
+> ./gradlew build
+> ./gradlew --version : Gradle 9.5.0
+- it start to smell good :)
+
+
+BUILD SUCCESSFUL in 3s
+5 actionable tasks: 5 executed
+Consider enabling configuration cache to speed up this build: https://docs.gradle.org/9.5.0/userguide/configuration_cache_enabling.html
+
+- Finally, now we can follow the Repsy documentation, and adpat the groovy syntax with GPT to adpat to Kotlin
+> CONFIGURE SUCCESSFUL in 42ms 
+Task :prepareKotlinBuildScriptModel UP-TO-DATE
+BUILD SUCCESSFUL in 1s
+- YES ! :)
+> ./gradlew publish
+BUILD SUCCESSFUL in 14s
+- !!!!!! :)
+
+> BUILD SUCCESSFUL in 678ms
+  5 actionable tasks: 5 up-to-date
+  Consider enabling configuration cache to speed up this build: https://docs.gradle.org/9.5.0/userguide/configuration_cache_enabling.html
+- Lets dig this cache optimzation. It seem funny
+
+- Still I have the feeling, confirmed by GPT that my current build doesnt really download the dependencies from my private repo as requested by the exercice
+-  For now its a fail. too bad
+- I wanted firstly toupload every dependencies of the project to my private repo and be 100% independant from Maven central
+- GPT ecxplained it would miss the phylosophy of the exercice. create duplication and make it very weak as it would supose every dependencies maintained by myself. Sound logical.
+- I asked him for a minimal Hello World dependencie to validate the exercice
+
+- Its almost midnight and an half so I will slee
+
+For me tomorrow :
+1) read again the two last review. Check if you respected the advices for this 2nd part of logbook. Finally check if mains concepts are understood
+2) Do, publish to the private repo and fetch the Hello World dependencie
+3) Have a look at  this potential optimization : ./gradlew publish
+Consider enabling configuration cache to speed up this build: https://docs.gradle.org/9.5.0/userguide/configuration_cache_enabling.html
+
