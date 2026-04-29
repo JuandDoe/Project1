@@ -608,7 +608,7 @@ B) The log give no context
 - So the goal is to know thanks to the error that server wasn't shut down gracefully. As said above, will be important to investigate an issue in a real (and complex) context
 > Server interrupted while waiting for shutdown latch
 
-3) The catch block wraps a checked exception in a runtime one for no real reason
+C) The catch block wraps a checked exception in a runtime one for no real reason
 
 - This one will ask me a bit of thought. Lets be fully honest so far I didn't really dig try catch and exception handling. Inteliji proposed autocmplete and i approved.
 - Better late than nothing. Today we will dig the subject. I started to discuss a bit with Claude to have a good understanding through question/ ask for criticize reformulation of my understanding
@@ -616,3 +616,62 @@ B) The log give no context
 - The caller of a fonction and the function itself sign a contract. The contract say what are autorized imput and expected output 
 - "throws" clause depict says that a given type of exception isnt handled there directly and transfe the responsability of error handling to the caller (propagation). The main throw driectly error to JVM who kills the process
 - "Catch" stops the error propagation and handle the error right there  
+
+- SHIT I compiled the test dependencie with a jvm 25 at work :)
+> 1task:main: Dependency resolution is looking for a library compatible with JVM runtime version 21, but 'org.example:hw_dependencie:1.0.0' is only compatible with JVM runtime version 25 or newer.
+- Of course a java program compiled in JVM X can't be compiled later in a previous JVM version
+- I downloaded a JVM 25 for this project through intelijii > Project structure > SDK. Went for Amazon koreto just cause I remmeber my colleague said they fix fast and are very active int devlopment
+- Complied just fine
+
+- Lets go back to our java gestion of errors
+- Try/Catch block act as a kind of watchdog where you monitor a block of code surrounded by "if" and take action accordingly if an error occur. You describe the handle erro logic into the "catch"
+
+> } catch (InterruptedException e) {
+logger.info("It seem as something fucked up!");
+throw new RuntimeException(e); // ← ici
+}
+- The problme is by Wrapping an InterruptedException (specific) exception into a more general exception RuntimeException we only make error less specific/revelant fro debugging 
+- In Java each exceptions are class herithing from each others. they can be unchecked or checked 
+- InterruptedException is checked and RuntimeException is unchecked, so the code will compile even if we dont do something to handle the exception. That why the IDE suggested this trick, to simplify and avoid botherring with the exception 
+- Note that wrapping exception may make sense in cas of lambda expression (heheheh the next topic..) or in case of an interface who doesnt allows to throws exception
+- As public static void main(String[] args) throws InterruptedException declare throws InterruptedException we can completly let the error propagation going 
+- Last but not list we avoiding overlooggin as the fix turn
+> java.lang.RuntimeException: java.lang.InterruptedException
+at org.example.Main.main(Main.java:47)
+Caused by: java.lang.InterruptedException
+at ...
+- Into...
+> java.lang.InterruptedException
+at org.example.Main.main(Main.java:47)
+- Seem nothing, but once again in a big scale production context it can save yoir mental health at 3.AM
+
+- GOOOD : We have a good and a bad new : Good is the cache seem to work !
+> Parallel Configuration Cache is an incubating feature.
+Calculating task graph as no cached configuration is available for tasks: build
+BUILD SUCCESSFUL in 8s
+
+VS, while compiling again right after :
+> Reusing configuration cache.
+BUILD SUCCESSFUL in 659ms
+
+- The bad new was once again my lack of stringency. I read log too fast. Well, at least we get the """big brain""" optimization satisfaction feeling :)
+
+2) Lambda style note
+- Changed shutdown hook for lambda expression syntax 
+> Runtime.getRuntime().addShutdownHook(new Thread(() -> latch.countDown()));
+
+- Fine, the name is cool, but why ?
+- Lambda allow way more concise code
+- In Java everything excepting instructions and primitives tyoes are objects
+- So you cant define a methode outside a class or pass this function as method parameter withouth anonymous inner classes. A whole class for a single behaviour
+- Was boilerplate
+- Lambdas expressions (also named enclosures or  anonymous functions, allow to pass as parameters a set of instructions
+- A lambda always implemnt a fonctional interface with only one abstract method
+> https://www.jmdoudoux.fr/java/dej/chap-lambdas.htm
+
+- Everything compile fine. I'm happy as I was able to do task 2 from A to Z in a not too long time. Obviously speed isn't the much important at all but still
+- Note for reviewer ; Don't hesit to force me showing deep understanding of concepts used, explaining them etc. I'm a bit affraid of my own lazyness if I'm not push to :(
+
+- Final check. Server work as a charm
+
+- Well, in any cases.. Midnight and half.. Good night ! :)

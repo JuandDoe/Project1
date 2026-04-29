@@ -12,16 +12,11 @@ import java.util.concurrent.CountDownLatch;
 public class Main {
     final static Logger logger = LoggerFactory.getLogger(Main.class);
 
-    public static void main(String[] args) throws InterruptedException {
+    static void main() throws InterruptedException {
 
         final CountDownLatch latch = new CountDownLatch(2);
         // logout or shutdown event
-        Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
-            @Override
-            public void run() {
-                latch.countDown();
-            }
-        }));
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> latch.countDown()));
 
         int port = 42000;
 
@@ -52,7 +47,7 @@ public class Main {
 
         } catch (InterruptedException e) {
             logger.error("Server interrupted while waiting for shutdown latch");
-            throw new RuntimeException(e);
+            throw e;
         }
 
     }
