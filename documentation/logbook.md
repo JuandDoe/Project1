@@ -675,3 +675,5 @@ BUILD SUCCESSFUL in 659ms
 - Final check. Server work as a charm
 
 - Well, in any cases.. Midnight and half.. Good night ! :)
+
+- I'm just thinking (late night thinking) ,I may probably have not only  loaded credential from gradle properties to avoid having them hardcoded but also loaded them from a hash. to not have them in plain text anywhere.. . idk not very clear on my mind  its maybe even note possible. Hope rewiever will have some insights
