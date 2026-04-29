@@ -51,7 +51,7 @@ public class Main {
             latch.await();
 
         } catch (InterruptedException e) {
-            logger.info("It seem as something fucked up!");
+            logger.error("Server interrupted while waiting for shutdown latch");
             throw new RuntimeException(e);
         }
 

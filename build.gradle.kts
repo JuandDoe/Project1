@@ -11,7 +11,7 @@ version = "1.0-SNAPSHOT"
 
 java {
     toolchain {
-        languageVersion.set(JavaLanguageVersion.of(21))
+        languageVersion.set(JavaLanguageVersion.of(property("jdk_version").toString().toInt()))
     }
 }
 
@@ -19,8 +19,23 @@ application {
     mainClass.set("org.example.Main")
 }
 
+publishing {
+    publications {
+        create<MavenPublication>("maven") {
+            from(components["java"])
+        }
+    }
+}
+
 repositories {
-    mavenCentral()
+    maven {
+        url = uri(property("repsyUrl") as String)
+        credentials {
+            username = property("repsyUsername") as String
+            password = property("repsyPassword") as String
+        }
+    }
+    // Plus de mavenCentral() ici — tout passe par Repsy
 }
 
 dependencies {
@@ -30,27 +45,18 @@ dependencies {
     testImplementation(platform("org.junit:junit-bom:5.10.0"))
     testImplementation("org.junit.jupiter:junit-jupiter")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+
+    // Source: https://mvnrepository.com/artifact/org.junit.jupiter/junit-jupiter-api
+
+    // not used dependencies so far. just here for repo logic testing/understanding
+    testImplementation("org.junit.jupiter:junit-jupiter-api:6.0.3")
+    // Source: https://mvnrepository.com/artifact/tools.jackson.core/jackson-databind
+    implementation("tools.jackson.core:jackson-databind:3.1.2")
+
+    // My own hello world dependencie
+    implementation("org.example:hw_dependencie:1.0.0")
 }
 
 tasks.test {
     useJUnitPlatform()
-}
-
-publishing {
-    publications {
-        create<MavenPublication>("maven") {
-            from(components["java"])
-        }
-    }
-
-    repositories {
-        maven {
-            url = uri(property("repsyUrl") as String)
-
-            credentials {
-                username = property("repsyUsername") as String
-                password = property("repsyPassword") as String
-            }
-        }
-    }
 }

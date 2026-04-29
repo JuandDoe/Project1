@@ -281,6 +281,31 @@ Document:
 - Get an access token. create a folder no_push/ and a repsy.txt inside to store it . Exclude both from Git
 - Aded both the repo and file to .gitignore. Probably overkill/ redundant but who know it may avoid a typo or a single "ligne of failure" erased by an LLM in the futur
 
+
+_____________________________________________________________________________________________________________________________________________________________________________
+
+Part 2 – Gradle + repository authentication
+• Configure Gradle to fetch a dependency from:
+• a real private Maven repository or
+• a locally simulated one that requires authentication.
+• No hardcoded secrets in the repository.
+• Use environment variables or ~/.gradle/gradle.properties.
+
+Document:
+• what error you see when auth is wrong,
+• how you identified the root cause,
+• how you fixed it.
+
+- Lets google it!
+> set up maven private repo
+- Well browsing few results but feel as if I start reading what each techs solutions tell about themeself they will kidding me by all saying they are THE marvellous 3 legs unicorns out there. 
+- Goodl old dear stack : https://stackoverflow.com/questions/12410423/how-do-i-setup-a-private-remotely-accessible-maven-repository
+- Post from one year ago. Should still be a up to date solution : https://repsy.io/
+- ITS FREE; (very important as we are rats) - Anyway the scope of the exercice is about finding a tool and properly seted up. So, no problem to go "dirty", right ? 
+- Started set up : seem quite simple with few click through a GUI. Private repo seed up
+- Get an access token. create a folder no_push/ and a repsy.txt inside to store it . Exclude both from Git
+- Aded both the repo and file to .gitignore. Probably overkill/ redundant but who know it may avoid a typo or a single "ligne of failure" erased by an LLM in the futur
+
 - Walked a bit around the website and found something interesting : Using Repository with Gradle
 -  Well..well..well. Here the kind of problem I hate. Foud a good documentation, matching my tool... but half.
 
@@ -394,8 +419,8 @@ BUILD SUCCESSFUL in 14s
 
 - Still I have the feeling, confirmed by GPT that my current build doesnt really download the dependencies from my private repo as requested by the exercice
 -  For now its a fail. too bad
-- I wanted firstly toupload every dependencies of the project to my private repo and be 100% independant from Maven central
-- GPT ecxplained it would miss the phylosophy of the exercice. create duplication and make it very weak as it would supose every dependencies maintained by myself. Sound logical.
+- I wanted firstly to upload every dependencies of the project to my private repo and be 100% independant from Maven central
+- GPT explained it would miss the phylosophy of the exercice. create duplication and make it very weak as it would supose every dependencies maintained by myself. May make sense.
 - I asked him for a minimal Hello World dependencie to validate the exercice
 
 - Its almost midnight and an half so I will slee
@@ -406,3 +431,188 @@ For me tomorrow :
 3) Have a look at  this potential optimization : ./gradlew publish
 Consider enabling configuration cache to speed up this build: https://docs.gradle.org/9.5.0/userguide/configuration_cache_enabling.html
 
+- Well, the idea of non privately hoesting all the dependencies doesn't please me at all. 
+- This article seem to be ok, with me https://dev.to/sumstrm/time-for-secure-dependencies-private-maven-repository-for-java-kotlin-scala-5afl
+
+The two main reasons to use private Maven repositories for your JVM packages:
+
+   1) Secure source for open source dependencies. With 1300+ public repositories and over 24 million Java artifacts, organizations need to control the code they are using - and not allow free entry of untrusted components.
+   2) Distribute internal components. With a wide range of applications that depend on each other, organizations require private repositories to share code between services while keeping artifacts private and secure.
+
+- New plan : We will privately fetch all the dependencies, AND THEN create and fetch privately a homemade dependencie as both aproach make sense in a professional context. More can less (Take that Mr. Van der Rohe)
+
+> 1task:main: Could not find io.fusionauth:java-http:1.4.0.
+Searched in the following locations:
+https://repo.repsy.io/user92137778/project1/io/fusionauth/java-http/1.4.0/java-http-1.4.0.pom
+Required by:
+root project '1task'
+Possible solution:
+Declare repository providing the artifact, see the documentation at https://docs.gradle.org/current/userguide/declaring_repositories.html
+
+- Pleasant error, we get ride of MavenCentral public repo
+- GPT told directly by itself that i needed to configure repsy ipstream by ading maven proxy to my Repsy repo setting : https://repo1.maven.org/maven2/
+- Worked 
+> Download https://repo.repsy.io/user92137778/project1/org/junit/platform/junit-platform-engine/1.10.0/junit-platform-engine-1.10.0.module, took 157 ms
+BUILD SUCCESSFUL in 13s
+
+- From my understanding its  a basic proxy who fetch from maven then store on my own private repo so when i build i dont go throught maven server anymore but only my own private repsy
+- Lets read a bit more on it to make the concept fully ours :  https://docs.repsy.io/maven/using-repsy-as-proxy/
+- My insight was right
+
+- Well : What I want to test now is : Let say I have a bunch of dependencies, publish them with 
+> ./gradlew publish
+- If I ad later another dependencie and do a build without publish again before it should fail as I intentionaly didnt specified any Maven direct fetch as failback
+- Interesting 
+> Download https://repo.repsy.io/user92137778/project1/org/junit/platform/junit-platform-engine/6.0.3/junit-platform-engine-6.0.3-sources.jar, took 476 ms
+- It just builed succefully. Well the actual behavior is silthly different from my first mental representation
+- Refreshing My gradle does : Task :prepareKotlinBuildScriptModel wich seem a more complex task than running only
+- Figured out that its an internal task at plugin Kotlin DSL level wich can be read from source code of IDE only. I'm too lazzy to dig that deep now. Maybe later https://github.com/JetBrains/intellij-community
+
+- Well since i refreshed graddle with the litle elephant button I just want to check if ./gradlwev build woukd work same.
+
+> Failed to calculate the value of task ':compileJava' property 'javaCompiler'.
+> Cannot find a Java installation on your machine (Windows 11 10.0 amd64) matching: {languageVersion=21, vendor=any vendor, implementation=vendor-specific, nativeImageCapable=false}. Toolchain download repositories have not been configured.
+- Make sense. I'm at work and my toolchain is Java 25 on my windows machine as its the last LTS 
+- I commented in my build.gradle and made a copy/paste with 25 to switch easily. If i notice other change between both machine I would have to create HOME and WORK graddle properties
+// HOME
+  //java {
+  //    toolchain {
+  //        languageVersion.set(JavaLanguageVersion.of(21))
+  //    }
+  //}
+- Build Passed. endpoint 200 and 404 as esxpected. No regression. Obviously one nexts step would be to learn to automate those unitary testing as its redundant
+
+- Well no.. it was a cached build who passed as the elephant gradle button, keep going to happend. 
+- Tweaked a bit my gradle.propertie so I can switch easily to work profile and JDK 25 in two click
+# HOME
+# org.gradle.java.installations.auto-detect=false
+
+# WORK
+org.gradle.java.installations.auto-detect=true
+
+- But we will do it one click instead of 2 by 
+- Now we dinamicaly change the version by commenting/uncomenting one area only on code 
+> java {
+toolchain {
+  languageVersion.set(JavaLanguageVersion.of(property("jdk_version").toString().toInt()))
+  }
+  }
+- I think its the kind of litles things who seem nothing but avoid shooting your own leg later by keeping clear config
+
+- NOW we have a working project who comile and run + dynamic simple configuration + no regression 
+
+- Time to go back to creating my own hello world java dependencie to ad to my Repsy
+- Minimal "hw_dependencie" project done and publish with ./gradlew publish from 
+- aded import to the main project
+> implementation("org.example:hw_dependencie:1.0.0")
+- Something went wrong.. but seriously we are so close to a success :    
+> Could not find org.example:hw_dependencie:1.0.0.
+Searched in the following locations:
+https://repo.repsy.io/user92137778/project1/org/example/hw_dependencie/1.0.0/hw_dependencie-1.0.0.pom
+If the artifact you are trying to retrieve can be found in the repository but without metadata in 'Maven POM' format, you need to adjust the 'metadataSources { ... }' of the repository declaration.
+- I'm glad I went for trying two solutions for private repository cause it lead to an error i wouldnt even know just with public dependencies pushed in my private repsy
+
+>// Publishing only repositories
+repositories {
+maven {
+url = uri(property("repsyUrl") as String)
+credentials {
+username = property("repsyUsername") as String
+password = property("repsyPassword") as String
+}
+}
+}
+}
+
+> // Downloading only repository
+repositories {
+mavenCentral()
+}
+- I puted Repsy in the dowload Repository section of my graddle and not in my upload one. I wasn't clearly aware of the architecture so I copy pasted a bit  too fast the Repsy set up from the main project
+- My guts told me about : "It must probably be an indetation / bracket/ Section delimitation  issue but it was blur as hell.. Anyway that one of my favorite use case with LLM. Saying you think the logic of your file is only "aproximatly correct" but failed + provide error message
+
+- Server endpoint Work just like a charm.
+
+IMPORTANT PERSONAL NOTE : 
+
+- I made a similar mistake as with the JDK version when testing with javac --version and whith the Case sensitivy.
+- I mixed the environement I have at work (gradle 9.3 through wrappler) with the 4.1 who come packaged with APT and Debian 13
+- In a way I'm disapointed of myself cause I keep doing same big mistake : deep lack of stringency
+- But I solved it, and the more I pay lack of stringency by losing time the most i will remember the importance of it
+- Still I think the hability to understand I was wrong (it wasnt only a groovy > kotlin syntax difference issue) and to change my attack angle is a good point.
+- I didn't gave up. Here is the point
+- I then applied it to my graddle.propertie. Being sttrict and using gradle properties for JVM version instead of hardcoded allow to switch easily between Windows and Unix developement environement context
+- I'm glad docker is the next part as its the logical follow up when it come to cross-platfoirm standardized runtime environement. The monkey is coming, dear whale
+
+Bonus : Cache optimization for ./gradlew publish
+
+- https://docs.gradle.org/9.5.0/userguide/configuration_cache_enabling.html 
+- 655ms without any optimzation
+- Doc goes straight to the point
+- ad to gradle.properties 
+> org.gradle.configuration-cache=true
+- BUILD SUCCESSFUL in 641ms
+- Tried again : 605 ms/ 655 ms.. doesnt seem revelant : project may be too small
+
+- Found something else who look funny to go even faster : Enabling Parallel Configuration Caching
+- Just aded directly to gradle.properties either
+> org.gradle.configuration-cache.parallel=true
+- BUILD SUCCESSFUL in 641ms/ 622 ms, 593 ms, 613 ms
+- even if the message showed up as excepted 
+>configuration cache entry reused.
+
+- Claude sugested few other ways to go, it seem interesting but I think for now its better to close the task, go for a review and then task 3. Or maybe as a follow up exercice sure
+- Hierarchisation of priorities is important.
+- Still I keep thinking about Maybe I can maybe  simulate a big repo with a fake ull of 0101010 10GO dependencie or something
+- Not gona lie  i'm a bit frustrated to not see even a litle improve, I wanted to feel as the guys on youtube who say "blablabla my build gies 42% faster now"
+
+
+- Shit I completly forget this part of the REVIEW_PART1_FOLLOWUP.md
+
+## Two smaller notes
+
+**The catch block from growth area 5 is unchanged.**
+You addressed all four explicit exercises, which is fair, and growth area 5 was in the discussion section without a corresponding exercise. So this is not a miss, just a follow-up. The block currently logs at the wrong level, gives no context, and wraps a checked exception in a runtime one for no real reason. When you have ten minutes, take another look at it with the log-level habit you just built in exercise 3 and see what you want to change.
+
+**Lambda style note.**
+Your shutdown hook is written like this:
+
+```java
+Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
+    @Override
+    public void run() {
+        latch.countDown();
+    }
+}));
+```
+
+This is the pre-Java-8 style, which is what most older Stack Overflow answers will show you. Since Java 8 (you are on 21), the idiomatic version is:
+
+```java
+Runtime.getRuntime().addShutdownHook(new Thread(() -> latch.countDown()));
+```
+
+Same behavior, much less ceremony. Worth knowing because once you start spotting it, you will see opportunities for it everywhere. It is also a good signal when reading other people's code: if you see anonymous inner classes everywhere in modern Java, the codebase is probably copying patterns from before 2014.
+
+---
+1) The catch block from growth area 5 is unchanged
+
+A) The block currently logs at the wrong level
+  - Changed log level from info to error as 
+  - I thought Info was fine as in my case an interuption would have no difference with a graceful latc hook trigger.
+  - If i have understood well, its an error level cause in production context the rough interuption can lead to a cascade of problem (request pending in pool causing a timeout, a framework responding weirdly and lead to a crash.)
+
+B) The log give no context
+- Sure, here my mistake was to look for something funny to write. I get myself distracted a bit
+- Thought a bit about what the hell i can put there. Well we cat a catch (InterruptedException e)
+- So the goal is to know thanks to the error that server wasn't shut down gracefully. As said above, will be important to investigate an issue in a real (and complex) context
+> Server interrupted while waiting for shutdown latch
+
+3) The catch block wraps a checked exception in a runtime one for no real reason
+
+- This one will ask me a bit of thought. Lets be fully honest so far I didn't really dig try catch and exception handling. Inteliji proposed autocmplete and i approved.
+- Better late than nothing. Today we will dig the subject. I started to discuss a bit with Claude to have a good understanding through question/ ask for criticize reformulation of my understanding
+
+- The caller of a fonction and the function itself sign a contract. The contract say what are autorized imput and expected output 
+- "throws" clause depict says that a given type of exception isnt handled there directly and transfe the responsability of error handling to the caller (propagation). The main throw driectly error to JVM who kills the process
+- "Catch" stops the error propagation and handle the error right there  
