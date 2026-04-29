@@ -279,7 +279,7 @@ Document:
 - ITS FREE; (very important as we are rats) - Anyway the scope of the exercice is about finding a tool and properly seted up. So, no problem to go "dirty", right ? 
 - Started set up : seem quite simple with few click through a GUI. Private repo seed up
 - Get an access token. create a folder no_push/ and a repsy.txt inside to store it . Exclude both from Git
-- Aded both the repo and file to .gitignore. Probably overkill/ redundant but who know it may avoid a typo or a single "ligne of failure" erased by an LLM in the futur
+- Aded both the repo and file to .gitignore. Probably overkill/ redundant but who know it may avoid a typo or a single "ligne of failure" erased by an LLM in the futur. That why i call the directory no_push btw.
 
 
 _____________________________________________________________________________________________________________________________________________________________________________
