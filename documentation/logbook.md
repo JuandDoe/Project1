@@ -779,3 +779,64 @@ Some last words to ad after this task
 - I need to be careful, calm down when I'm excited and take a step back to see the whole picture. Maybe a schema had helped
 
 - I can be proud of myself cause despite clearly under optimized way.. i manage to find one way
+
+
+--------------------------------------------------------------------------------------------------------------------------------
+
+Part 3 – Dockerize properly
+• Write a Dockerfile that:
+• builds the app,
+• runs it as a non-root user,
+• does not create OS users at container startup.
+• Use docker compose to run the app.
+
+Deliverable:
+• docker compose up --build works from a clean state.
+- 
+- Went At the project root
+> docker init
+> docker compose up --build
+- 
+> #11 ERROR: failed to calculate checksum of ref o3mleuczvsuvlhg4001owiqmx::sgh1qtzfbrodfm26ntodg31vn: "/pom.xml": not found
+#12 [deps 3/5] COPY --chmod=0755 mvnw mvnw
+#12 ERROR: failed to calculate checksum of ref o3mleuczvsuvlhg4001owiqmx::sgh1qtzfbrodfm26ntodg31vn: "/mvnw": not found
+#15 ERROR: failed to calculate checksum of ref o3mleuczvsuvlhg4001owiqmx::sgh1qtzfbrodfm26ntodg31vn: "/pom.xml": not found
+#16 [deps 4/5] COPY .mvn/ .mvn/
+#16 ERROR: failed to calculate checksum of ref o3mleuczvsuvlhg4001owiqmx::sgh1qtzfbrodfm26ntodg31vn: "/.mvn": not found
+failed to solve: failed to compute cache key: failed to calculate checksum of ref o3mleuczvsuvlhg4001owiqmx::sgh1qtzfbrodfm26ntodg31vn: "/pom.xml": not found
+- "/pom.xml": not found "/mvnw": not found "/.mvn": not found
+- Files arent into the docker context
+- Strange cause i builded at the root of project
+- Shit, "pom.xml": not found "/mvnw": not found "/.mvn": not found" ... the docker  init is for maven build not gradle :)
+- No option for graddle with docker.. we will have to use brain :)
+- I remmeber blurrly that I heard about build stage and optimization but I dont mind for now lets just make something working
+- Stack. home sweet home  https://stackoverflow.com/questions/61108021/gradle-and-docker-how-to-run-a-gradle-build-within-docker-container
+- Adapted gradle version 
+- Exercice says : runs it as a non-root user, does not create OS users at container startup.
+- Unfortunately the current one run as root
+- Lets try to make it work as root first, then we will improve
+- Moved from openjdk for koretto as open JDK doesnt provide JDK 25. Stayed with alpine as its suposed to be light +fast
+- sent the Dockerfile. GPT said it was bullshit: redundant build, run as root.. and proposed a better version
+> failed to solve: failed to compute cache key: failed to calculate checksum of ref o3mleuczvsuvlhg4001owiqmx::vmipy2cda3d6cz1tevw6mqosd: "/settings.gradle": not found
+- Changed COPY build.gradle settings.gradle for  $APP_HOME/ COPY build.gradle.kts settings.gradle.kts $APP_HOME/ to match the file name
+>  ✔ Image project1-server       Built                                                                                                                                                                                53.1s
+✔ Network project1_default    Created                                                                                                                                                                              0.0s
+✔ Container project1-server-1 Created                                                                                                                                                                              0.1s
+Attaching to server-1
+server-1  | no main manifest attribute, in app.jar
+server-1 exited with code 1                                                                                                                                                                                              
+- Weird cause I have both 
+plugins
+{
+  id("java")
+  id("application")
+  id("maven-publish")
+  }
+- AND
+application {
+  mainClass.set("org.example.Main")
+  }
+- Docker should find the entry point then
+- Oh shit yes I remmember about this. My jar isnt a Fat/uber Jar so its 
+- My concetration level started droped so hard 
+
