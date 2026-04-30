@@ -840,3 +840,157 @@ application {
 - Oh shit yes I remmember about this. My jar isnt a Fat/uber Jar so its 
 - My concetration level started droped so hard 
 
+- WE ARE BACK
+- Aded shadow plugging to my build.gradle.kts will allow me to compile my fat jar. This is necessary for two reasons : 
+1) A fat jar is a jar who contain all dependencies needed at runtime. It allow to run the application then in one line
+> java -jar myapplication.jar
+
+> When Not to Use Uber-JAR?
+There are some situations where it is not advantageous to use an Uber-JAR, especially in containerised environments. When developing a web application using the Uber-WAR solution of Spring Boot,for example, a single change in your application code results in the build of the Uber-WAR file that is placed inside a Docker image and transferred to the Container repository so that the cloud environment can pick up the change. This means that a single change results in the recreation of a file that is typically around 50 to 100 Mb and that needs to be transferred over the network. And in almost all situations, there is no change to the application runtime and thus there was no need to repackage that.
+- Okay I googled a bit ( and wanted a critical external point of view as i'm paranoîac when it come to potential LLM misslead
+- seem as its not optimized at all 
+- Layered jar will be a think to look at, maybe as a follow up. I will leave it for later or reviewer diescretion cause i feel as if I try now i will lost myself. Let keep it simple first
+- shadow also read 
+application {
+  mainClass.set("org.example.Main")
+  }
+- Shadow not only import necessary dependencies at runtime but also  create the MANIFEST.MF wich contain metadata. Especially the entry point of the java program
+- Thanks to this when java -jar app.jar is performed, the JVM open the Jar and find the Main-Class and call it main()
+- To do so we just need on ecommand
+> ./gradlew shadowJar
+- Went fine and fat jar was created
+> BUILD SUCCESSFUL in 8s
+2 actionable tasks: 2 executed
+Configuration cache entry stored.
+- Let test locally
+> java -jar build/libs/1task-1.0-SNAPSHOT-all.jar
+- Shit JRE missmatch version
+> Error: LinkageError occurred while loading main class org.example.Main
+java.lang.UnsupportedClassVersionError: org/example/Main has been compiled by a more recent version of the Java Runtime (class file version 69.0), this version of the Java Runtime only recognizes class file versions up to 65.0
+- Lets install the last 25 LTS koretto system wide, anyway 21 will be depreciated soon, better to go for last LTS : https://docs.aws.amazon.com/corretto/latest/corretto-25-ug/generic-linux-install.html
+> 1task-1.0-SNAPSHOT-all.jar
+> 23:13:26.603 [main] INFO org.example.Main -- Fuck off procrastination!
+1777583606620 Starting the HTTP server. Buckle up!
+1777583606629 HTTP server listening on port [42000]
+1777583606630 HTTP server started successfully
+23:13:26.630 [main] INFO org.example.Main -- Server started on port 42000 
+- Worked + tested endpoint
+
+> docker build -t project1 .
+- Meme : -t = give a tag /name to image to avoid having only an idea/ "." indicate position of Dockerfile. the current directory in our case
+- Build O.K
+- lets check
+> docker images
+> project1:latest 9c6fb5fbf08b 376MB 0B
+> docker run -p 43000:43000 project1
+docker: Error response from daemon: failed to create task for container: failed to create shim task: OCI runtime create failed: unable to retrieve OCI runtime error (open /run/containerd/io.containerd.runtime.v2.task/moby/e0034c1efecc2c0413842168b0250f472df585a2a205c1c01263636b140d688a/log.json: no such file or directory): exec: "nvidia-container-runtime": executable file not found in $PATH
+- Shit i probably fucked my nvidia drivers long time ago and run on intel CPU for a while without noticing
+- Lets check
+> nvidia-smi
+> -bash: nvidia-smi: command not found
+- Here we go lets try to install again properly
+- Didnt worked and i'm a bit too exausted to go deep there 
+> echo $XDG_SESSION_TYPE
+- I'm using Wayland as display server, not X11 and the config of nvidia seem to be a pain in ass. I remember now. I switched a while ago from X11 cause blablabla i read it was more modern etc.. then saw nvidia doesnt worked anylore an dswitched to cpu
+- i switched back default docker runtime from nvidia to runc
+> sudo nano /etc/docker/daemon.json
+- restart docker daemon 
+> sudo systemctl restart docker
+
+> docker run -p 43000:43000 project1
+22:01:28.266 [main] INFO org.example.Main -- Fuck off procrastination!
+1777586488287 Starting the HTTP server. Buckle up!
+1777586488307 HTTP server listening on port [42000]
+1777586488307 HTTP server started successfully
+22:01:28.307 [main] INFO org.example.Main -- Server started on port 42000 
+- IT WORKED :) 
+- Tested.. wait it doesnt work when i try to hit the api endpoint as i have an erro in browser tab
+> This site can’t be reached
+- I'm fool i mapped port as following : -p 43000:43000
+- But inside my app port is 42000 
+- <Port_Exposed_Docker>:<Port_Exposed_Java_app>
+- So i need to go for : 43000:42000
+> docker run -p 43000:42000 project1
+- WORKED.. FOR REALLL !!
+- Worked same with compose
+> docker compose up
+- WORKED AGAIN
+- Added image: project1:latest in compose as a matter of clarity so no need to read all the Dockerfile to get name of image builded
+>docker ps -a
+CONTAINER ID   IMAGE             COMMAND               CREATED          STATUS          PORTS                                                        NAMES
+972316f48fdd   project1:latest   "java -jar app.jar"   26 seconds ago   Up 25 seconds   43000/tcp, 0.0.0.0:43000->42000/tcp, [::]:43000->42000/tcp   1task-app-1
+
+- Lets break down docker core concepts
+- Dockerfile is used to build a Docker image, which can then be launched with docker run. compose.yaml allows you to configure and launch multiple Docker images in a single command, making it the standard tool for multi-container projects and scaling.
+
+- We will understand and explain each word of our Current Dockerfile to be sure everything is clear
+
+# ===== BUILD STAGE =====
+# Defines the first stage of the multi-stage build, named "build".
+# Uses the official Gradle 9.5.0 image with JDK on Alpine (lightweight Linux).
+FROM gradle:9.5.0-jdk-alpine AS build
+
+# Declares an environment variable APP_HOME pointing to the app's working directory.
+ENV APP_HOME=/usr/app
+
+# Sets /usr/app as the current working directory for all subsequent instructions.
+WORKDIR $APP_HOME
+
+# Copies only the Gradle configuration files from the host machine into the container.
+# Doing this first allows Docker to cache this layer and avoid re-downloading
+# dependencies if these files have not changed.
+COPY build.gradle.kts settings.gradle.kts $APP_HOME/
+
+# Copies the gradle/ folder (containing the Gradle wrapper) into the container.
+COPY gradle $APP_HOME/gradle
+
+# Copies the rest of the project (sources, resources, etc.) into the container.
+COPY . .
+
+# Runs the Gradle task that cleans old artifacts, then compiles and packages
+# the application into a fat/uber JAR (shadowJar bundles all dependencies).
+# --no-daemon avoids starting the Gradle daemon, suitable for CI/container environments.
+RUN gradle clean shadowJar --no-daemon
+
+
+# ===== RUNTIME STAGE =====
+# Defines the second stage, the final runtime image.
+# Starts fresh from Amazon Corretto 25 (Amazon's JDK distribution) on Alpine.
+# This image is lighter because it contains neither Gradle nor the source code.
+FROM amazoncorretto:25-alpine-jdk
+
+# Re-declares the APP_HOME environment variable (ENV values do not carry over between stages).
+ENV APP_HOME=/usr/app
+
+# Sets /usr/app as the current working directory again.
+WORKDIR $APP_HOME
+
+# Copies only the JAR produced by the "build" stage into the final image,
+# renaming it app.jar. The *.jar wildcard matches the shadowJar output file.
+COPY --from=build /usr/app/build/libs/*.jar app.jar
+
+# Creates a system group "appgroup" and a system user "appuser" belonging to that group.
+# Done in the Dockerfile (not at startup) so the user exists inside the image itself.
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+
+# Switches the current user to "appuser" for all subsequent instructions.
+# The container will therefore run without root privileges.
+USER appuser
+
+# Documents that the application listens on port 43000.
+# This is an indication for Docker and third-party tools — it does not open the port by itself.
+EXPOSE 43000
+
+# Defines the default command executed when the container starts:
+# runs the JAR with the JVM via "java -jar app.jar".
+# ENTRYPOINT (unlike CMD) cannot be easily overridden,
+# making it suitable as the fixed and primary entry point of the application.
+ENTRYPOINT ["java", "-jar", "app.jar"]
+
+- Finally we go to discuss with Claude a bit to know if some optimisation can be done to speed up the amount of time taked by our docker build 
+
+
+- Almost 1 AM, lets sleep a bit we will dig Dockerfilne line by line and build optimization tomorrow :)
+
+
+

@@ -1,0 +1,6 @@
+services:
+  app:
+    build: .
+    image: project1:latest
+    ports:
+      - "43000:42000"
