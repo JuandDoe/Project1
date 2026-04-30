@@ -677,3 +677,105 @@ BUILD SUCCESSFUL in 659ms
 - Well, in any cases.. Midnight and half.. Good night ! :)
 
 - I'm just thinking (late night thinking) ,I may probably have not only  loaded credential from gradle properties to avoid having them hardcoded but also loaded them from a hash. to not have them in plain text anywhere.. . idk not very clear on my mind  its maybe even note possible. Hope rewiever will have some insights
+
+
+- Guess who missed an important thing about the tesk :
+  Document:
+  • what error you see when auth is wrong,
+  • how you identified the root cause,
+  • how you fixed it.
+
+- As its just worked fine from firrst time i sisnt produce auth going wrong 
+- Lets add some properties in gradle.properties to cover all the case properly and see if we got fifferents messages by replacing the correct properties ones by one
+> repsyUrl_WRONG
+>FAILURE: Build failed with an exception.
+
+* What went wrong:
+>Configuration cache state could not be cached: field `classpath` of task `:compileJava` of type `org.gradle.api.tasks.compile.JavaCompile`: error writing value of type 'org.gradle.api.internal.artifacts.configurations.DefaultResolvableConfiguration'
+Could not resolve all files for configuration ':compileClasspath'.
+Could not find io.fusionauth:java-http:1.4.0.
+Searched in the following locations:
+https://repo.repsy.io/user92137778/project1WRONG/io/fusionauth/java-http/1.4.0/java-http-1.4.0.pom
+- The build fail cause the wrong repo URL lead to try to fetch the dependcies from a repo who doesnt exist / where those dependencies arent reachable
+- Without required dependencies build fail
+> repsyUsername_WRONG
+>BUILD SUCCESSFUL in 737ms
+- Interesting, with the correct url but wrong username.. the project build succefully
+>  Task :run
+10:18:21.385 [main] INFO org.example.Main -- Fuck off procrastination!
+1777537101409 Starting the HTTP server. Buckle up!
+1777537101419 HTTP server listening on port [42000]
+1777537101419 HTTP server started successfully
+10:18:21.419 [main] INFO org.example.Main -- Server started on port 42000
+[###########....] 75% EXECUTING [24s]
+- Wait..it buiuld and run.. it surpised me first
+- But ad an idea : Probably whhen you fetch dependencies from a maven repository you are on read only with no write access. so fetching dependencies is fine cause username is used to authentificate only and publish some
+- Lets dig the hypotesis 
+> Could not get resource 'https://repo.repsy.io/user92137778/project1/org/projectlombok/lombok/1.18.46/lombok-1.18.46.pom'.
+Could not GET 'https://repo.repsy.io/user92137778/project1/org/projectlombok/lombok/1.18.46/lombok-1.18.46.pom'. Received status code 401 from server:
+- Here we go. After changing the username auth and added a dependencie then to the build.gradle build fail.
+- 
+- WAITTT. The insight on read/write permission may be wrong cause I just noticed a folder named "extternal libraries" in my inteliji. So with already fetched dependencies, graddle just grab them from the local copy he made previously
+- Once fetched the .jar are copied locally
+- Lets test it by viiolently erase few jar from the folder 
+
+
+ > Could not get resource 'https://repo.repsy.io/user92137778/project1/org/projectlombok/lombok/1.18.46/lombok-1.18.46.pom'.
+Could not GET 'https://repo.repsy.io/user92137778/project1/org/projectlombok/lombok/1.18.46/lombok-1.18.46.pom'. Received status code 401 from server:
+- It still works, only the new dependencie cause the same error 
+- Hum maybe i'm wrong and the jar in external library folder isnt a fallback for already feyched dependency. Or maybe.. maybe it is but same message come cause something is weirdly cached somewhere
+- Lets try to be violent again : Invalidate casche and restart + all boxes checked 
+
+ > Could not download logback-classic-1.5.32.jar (ch.qos.logback:logback-classic:1.5.32)
+Could not get resource 'https://repo.repsy.io/user92137778/project1/ch/qos/logback/logback-classic/1.5.32/logback-classic-1.5.32.jar'.
+Could not GET 'https://repo.repsy.io/user92137778/project1/ch/qos/logback/logback-classic/1.5.32/logback-classic-1.5.32.jar'. Received status code 401 from server:
+Could not download jackson-annotations-2.21.jar (com.fasterxml.jackson.core:jackson-annotations:2.21)
+Could not get resource 'https://repo.repsy.io/user92137778/project1/com/fasterxml/jackson/core/jackson-annotations/2.21/jackson-annotations-2.21.jar'. Could not GET 'https://repo.repsy.io/user92137778/project1/com/fasterxml/jackson/core/jackson-annotations/2.21/jackson-annotations-2.21.jar'. Received status code 401 from server:
+- YESSS it was cause of cache. Erased .jar locally destroyed the fallback 
+- but the weird thing is I did a ./gradlew publish who was writed as success before rebuilding. So the new dependencie failed silently to be uploaded on repo
+- Same after invalidate cache. I may probably be fool.. Like.. no access to repo to upload, the build fail as expected but the ./gradlew publish JUST SUCCESS/FAILL SILENTLY ?!
+- Asked Claude. He said its possible. okay.. Gave me some good idea : testing with ./gradlew publish --info or --debug flags
+- Honestly.. ./gradlew publish --debug was just too long to read. I ctrl+f "error, not found,notfound" 0 iteration for each of the.
+- I gave the entire log to Claude
+- He pointed somethin
+> Task :publish UP-TO-DATE
+2026-04-30T10:59:25.418+0200 [INFO] [org.gradle.api.internal.tasks.execution.SkipTaskWithNoActionsExecuter] Skipping task ':publish' as it has no actions.
+- No halucination its indeed in logs
+- He said : Gradle never attempted to publish anything. The configuration cache had stored a previous successful build state and simply reused it, skipping the task entirely. No HTTP request was made to Repsy — no auth failure, no success, just nothing.
+  Key takeaway: the silence wasn't a Maven Publish plugin error-handling issue. It was the configuration cache short-circuiting the whole task. Before concluding an error is "silent", always check whether the task actually ran — UP-TO-DATE in the logs means Gradle skipped it entirely.
+- I protested and said i invalidated cache and restart?.. but it was inteliji cache and not gradle cache. Imixed both :(
+- EVEN ./gradlew publish --no-configuration-cache --info
+- GAVE ME :  Skipping task ':publish' as it has no actions.
+- ./gradlew publishMavenPublicationToMavenRepository --no-configuration-cache
+- Finally failed. At this point I was very pissed off but was only the begining
+-  ./gradlew tasks --no-configuration-cache found only 2 things :
+> publishMavenPublicationToMavenLocal
+publishToMavenLocal
+
+- Tired i gave to Claude my gradle. And guess what ?
+- I forget to puth credential in publishing block. They was only in reprository. All this time lost cause i didn't verified step by step and logicaly
+- did again ./gradlew publish and finally failed as expected
+> Could not resolve org.projectlombok:lombok:1.18.46.
+Could not get resource 'https://repo.repsy.io/user92137778/project1/org/projectlombok/lombok/1.18.46/lombok-1.18.46.pom'.
+Could not GET 'https://repo.repsy.io/user92137778/project1/org/projectlombok/lombok/1.18.46/lombok-1.18.46.pom'. Received status code 401 from server:
+- And worked succefuly with the corrct username
+> BUILD SUCCESSFUL in 13s
+
+> repsyPassword_WRONG
+- Build and run success cause dependencies was fetched from preious build. As excepted
+- Erase some localy previously fetched jar
+> Exception in thread "main" java.lang.NoClassDefFoundError: ch/qos/logback/core/joran/spi/JoranException
+at java.base/java.lang.Class.getDeclaredConstructors0(Native Method)
+at java.base/java.lang.Class.privateGetDeclaredConstructors(Class.java:2985)
+- Failed as expected as there is no local fallback anymore and repo password wrong doesnt allow to go for the classic way
+- The important thing is when you run, log primarily only say : dependency X, Y, Z, not found. Which is true  BUT you have no imediate clue about the auth root cause problem
+
+- The fix was always same : put the correct propertie back by clicking on te litle elephant to resync and build again 
+
+Some last words to ad after this task
+
+- I must be logical, review where it can fail. From simple cause to more tricky ones
+- I went too fast  exploring cache when it was all about a misundertsanding on how gradle Repo and publish task works
+- I need to be careful, calm down when I'm excited and take a step back to see the whole picture. Maybe a schema had helped
+
+- I can be proud of myself cause despite clearly under optimized way.. i manage to find one way
