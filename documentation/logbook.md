@@ -780,6 +780,21 @@ Some last words to ad after this task
 
 - I can be proud of myself cause despite clearly under optimized way.. i manage to find one way
 
+- VERY CRITICAL NOTE (Follow up v0)
+
+- Reviewer saw i pushed my gradle.properties. that a huge mistake everything was leaked
+- Here we see the lack of production experience
+- THE WORST PART IS I THOUGHT ABOUT IT :(
+- - I'm just thinking (late night thinking) ,I may probably have not only  loaded credential from gradle properties to avoid having them hardcoded but also loaded them from a hash. to not have them in plain text anywhere.. . idk not very clear on my mind  its maybe even note possible. Hope rewiever will have some insights
+- Its loged above..
+-  Wasnt until the end of thought provcess. I'm faulty here cause i get that something was strange
+   Edited5m
+And It clicked only when i saw your message, senior told me, its fine its not real prod but in real life push a gradle.example.properties only
+- So.. erased gradle.propertie. recreated excluded from git and pushed a sample 
+- Changed my Repsy credentials
+
+- I'm too h&appy, too excited to do my best, I must calm down to avoid stupid mistakes? Its important :)
+
 
 --------------------------------------------------------------------------------------------------------------------------------
 
@@ -933,7 +948,7 @@ FROM gradle:9.5.0-jdk-alpine AS build
 # Declares an environment variable APP_HOME pointing to the app's working directory.
 ENV APP_HOME=/usr/app
 
-# Sets /usr/app as the current working directory for all subsequent instructions.
+# Sets / create if not exist /usr/app and make it as the current working directory for all subsequent instructions.
 WORKDIR $APP_HOME
 
 # Copies only the Gradle configuration files from the host machine into the container.
@@ -971,6 +986,7 @@ COPY --from=build /usr/app/build/libs/*.jar app.jar
 
 # Creates a system group "appgroup" and a system user "appuser" belonging to that group.
 # Done in the Dockerfile (not at startup) so the user exists inside the image itself.
+# The -S flag marks the user/group as a system entity rather than a human user. Without it, adduser creates a full user with a password, a home directory in /home/appuser, and a login shell. With -S, Alpine automatically strips all of that down to the bare minimum — no password, no real home directory, no login shell, no SSH access — just enough for a process to run under its identity.
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 
 # Switches the current user to "appuser" for all subsequent instructions.
@@ -984,13 +1000,121 @@ EXPOSE 43000
 # Defines the default command executed when the container starts:
 # runs the JAR with the JVM via "java -jar app.jar".
 # ENTRYPOINT (unlike CMD) cannot be easily overridden,
-# making it suitable as the fixed and primary entry point of the application.
+# making it suitable as the fixed and primary entry point of the application. Its an architecture decision who bring clarity about  the container exact usecase
 ENTRYPOINT ["java", "-jar", "app.jar"]
+
+- - Almost 1 AM, lets sleep a bit we will build optimization tomorrow :)
 
 - Finally we go to discuss with Claude a bit to know if some optimisation can be done to speed up the amount of time taked by our docker build 
 
+- First lets check how much time our build take now
+>#5  FROM gradle:9.5.0-jdk-alpine         DONE 0.0s
+#6  FROM amazoncorretto:25-alpine-jdk    DONE 0.0s
+#7  WORKDIR /usr/app (build)             CACHED
+#8  WORKDIR /usr/app (stage-1)           CACHED
+#10 COPY build.gradle.kts settings...    DONE 0.0s
+#11 COPY gradle                          DONE 0.0s
+#12 COPY . .                             DONE 0.1s
+#13 RUN gradle clean shadowJar           DONE 34.4s ⬅️ 96% of time
+#14 COPY --from=build *.jar              DONE 0.0s
+#15 RUN addgroup && adduser              DONE 0.2s
+#16 exporting image                      DONE 0.0s
 
-- Almost 1 AM, lets sleep a bit we will dig Dockerfilne line by line and build optimization tomorrow :)
+real 0m35.612s
+
+> docker ps -a
+> docker rmi <images>
+> docker system prune -a --volumes
+
+
+- wWthout any cache 
+> #5  FROM gradle:9.5.0-jdk-alpine         DONE 6.0s   ← image pull
+#7  WORKDIR /usr/app (build)             DONE 0.2s
+#8  COPY build.gradle.kts settings...    DONE 0.0s
+#9  COPY gradle                          DONE 0.0s
+#10 COPY . .                             DONE 0.1s
+#11 RUN gradle clean shadowJar           DONE 35.0s  ← 80% of total time
+#12 FROM amazoncorretto:25-alpine-jdk    DONE 7.7s   ← image pull
+#13 WORKDIR /usr/app (stage-1)           DONE 0.1s
+#14 COPY --from=build *.jar              DONE 0.0s
+#15 RUN addgroup && adduser              DONE 0.2s
+#16 exporting image                      DONE 0.0s
+
+real 0m43.683s
+
+- I don't use a full JDK, a JRE would be enough but amazon only provide JDK images on docker hub 
+- Claude suggested jlink, I already hearded about is. Colleague said its powerful once
+- Jlink is basically a tool taht allow to create a fully tailored JRE, taking only dependencies needed by a project to get smallest possible runtime
+- lets try to go for jlink 
+
+> jdeps --multi-release 25 \
+--ignore-missing-deps \
+--print-module-deps \
+build/libs/*.jar
+- Analyzes the JAR and outputs exactly the list to paste into --add-modules
+- Wondered why we have to specify Java version
+- A JAR can contain multiple versions of the same code for different Java versions.
+--multi-release 25 tells jdeps : "analyze this JAR as if it runs on Java 25". Then we are sure see the real dependencies of our app as it will actually run in production
+- Without this flag, jdeps would analyze an older version of the code and could miss required modules
+
+> 12:45Claude responded: Key observation — gradle shadowJar dropped from 34s → 11s because dependencies were already cached by the previous step.#8  FROM gradle:9.5.0-jdk-alpine         DONE 0.0s  (cached locally)
+#9  FROM alpine:3.23                      DONE 0.0s  (cached locally)
+#10 WORKDIR /usr/app (build)             CACHED
+#11 FROM amazoncorretto:25-alpine-jdk    CACHED
+#12 WORKDIR /usr/app (stage-2)           CACHED
+#14 COPY build.gradle.kts settings...    DONE 0.0s
+#15 COPY gradle                          DONE 0.0s
+#16 RUN gradle dependencies              DONE 34.7s  ← deps download
+#17 RUN apk add binutils                 DONE 1.1s
+#18 RUN jlink                            DONE 9.9s
+#19 COPY --from=jre-build /jre-custom    DONE 0.1s
+#20 COPY src                             DONE 0.0s
+#21 RUN gradle shadowJar                 DONE 11.3s  ← compile only
+#22 COPY --from=build *.jar              DONE 0.0s
+#23 RUN addgroup && adduser              DONE 0.2s
+#24 exporting image                      DONE 0.2s
+
+real 0m48.492s
+
+- Lets simulate a change in source code 
+> echo "// test" >> src/main/java/org/example/Main.java
+
+> #8  FROM gradle:9.5.0-jdk-alpine         DONE 0.0s  (cached locally)
+#9  FROM amazoncorretto:25-alpine-jdk    DONE 0.0s  (cached locally)
+#10 FROM alpine:3.23                     DONE 0.0s  (cached locally)
+#12 WORKDIR /usr/app (build)             CACHED
+#13 COPY gradle                          CACHED
+#14 COPY build.gradle.kts settings...    CACHED
+#15 RUN gradle dependencies              CACHED  ← deps untouched
+#16 COPY src                             DONE 0.0s  ← code changed
+#17 RUN gradle shadowJar                 DONE 7.4s  ← compile only
+#18 WORKDIR /usr/app (stage-2)           CACHED
+#19 RUN apk add binutils                 CACHED
+#20 COPY --from=build *.jar              CACHED
+#21 RUN jlink                            CACHED
+#22 COPY --from=jre-build /jre-custom    CACHED
+#23 RUN addgroup && adduser              CACHED
+#24 exporting image                      DONE 0.0s
+
+real 0m8.667s
+
+- OPTIMIZATION RESULT
+
+From scratch (no cache) : 48s  →  unchanged (first build always costs)
+Code change rebuild      : 36s  →  8.7s      (-76%)
+
+- Okay I must completly admit from jlint it was mostly "full" vibecoding. I just wanted an optimized stuff which build faster than my basic one.
+- There was a bit of error as Claude miss that alpine didnt endebed some tools. Its something I alrzdy saw on the past
+- Was solved in a few iteration
+- I also said to him to not pass credentials to the image as clear text
+- Now that the build works and that the server serve as expected i will break down the new Dockerfile lines by lines as I did for the previous one
+- This way i will either stop to feel guilty for vibecoding too much and take thoses new concepts as mine
+- I keep first Dockerfile but comment it, will be easier to keep track than only have it into logbook 
+- 
+
+
+
+
 
 
 
