@@ -1,5 +1,6 @@
 no_push/
 repsy.txt
+gradle.properties
 
 .gradle
 build/
