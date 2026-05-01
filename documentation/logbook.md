@@ -796,6 +796,34 @@ And It clicked only when i saw your message, senior told me, its fine its not re
 - I'm too h&appy, too excited to do my best, I must calm down to avoid stupid mistakes? Its important :)
 
 
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Post review follows ups :
+
+1) Security
+
+- Changed repsyUrl_WRONG, repsyUsername_WRONG and repsyPassword_WRONG values to safes placeholder
+- Changed repsyUsername and  repsyUsername from Repsy account credential scope to specific repsy reprository scope 
+- changed names from repsyUsername and repsyPassword to repsyRepoUsername and repsyRepoPassword for better scope clarity
+- Tested by erasing all graddle cache
+> rm -rf ~/.gradle/caches
+rm -rf ~/.gradle/daemon
+rm -rf ~/.gradle/native
+rm -rf ~/.gradle/wrapper
+- Went fine
+
+2) Robustness
+
+-  added mavenCentral() back as a fallback option to fetch dependencies
+> > rm -rf ~/.gradle/caches
+rm -rf ~/.gradle/daemon
+rm -rf ~/.gradle/native
+rm -rf ~/.gradle/wrapper
+- - Went fine
+
+
+
 --------------------------------------------------------------------------------------------------------------------------------
 
 Part 3 – Dockerize properly

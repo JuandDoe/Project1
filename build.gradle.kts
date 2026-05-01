@@ -30,8 +30,8 @@ publishing {
         maven {
             url = uri(property("repsyUrl") as String)
             credentials {
-                username = property("repsyUsername") as String
-                password = property("repsyPassword") as String
+                username = property("repsyRepoUsername") as String
+                password = property("repsyRepoPassword") as String
             }
         }
     }
@@ -41,11 +41,11 @@ repositories {
     maven {
         url = uri(property("repsyUrl") as String)
         credentials {
-            username = property("repsyUsername") as String
-            password = property("repsyPassword") as String
+            username = property("repsyRepoUsername") as String
+            password = property("repsyRepoPassword") as String
         }
     }
-    // Plus de mavenCentral() ici — tout passe par Repsy
+    mavenCentral()
 }
 
 dependencies {
@@ -62,6 +62,8 @@ dependencies {
     testImplementation("org.junit.jupiter:junit-jupiter-api:6.0.3")
     // Source: https://mvnrepository.com/artifact/tools.jackson.core/jackson-databind
     implementation("tools.jackson.core:jackson-databind:3.1.2")
+
+    //////TEST
 
     // My own hello world dependencie
     implementation("org.example:hw_dependencie:1.0.0")
