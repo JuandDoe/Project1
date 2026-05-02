@@ -1,10 +1,9 @@
-## syntax=docker/dockerfile:1
-#
 ## ===== BUILD STAGE =====
 #FROM gradle:9.5.0-jdk-alpine AS build
 #ENV APP_HOME=/usr/app
 #WORKDIR $APP_HOME
-#COPY build.gradle.kts settings.gradle.kts $APP_HOME/
+#COPY build.gradle.kts settings.gradle.kts $APP_HOME/ dans ton docker-compose.yml.
+
 #COPY gradle $APP_HOME/gradle
 ## Download and cache dependencies in a separate layer
 ## Credentials are injected at build time via --mount=type=secret and never written to any layer
@@ -52,6 +51,7 @@
 # Defines the first stage named "build".
 # Uses the official Gradle 9.5.0 image with JDK on Alpine Linux.
 # This stage is responsible for compiling the application and producing the JAR.
+# A stage contain layers (a bit as objects contains fields)
 FROM gradle:9.5.0-jdk-alpine AS build
 
 # Declares an environment variable APP_HOME pointing to the app's working directory.
@@ -73,8 +73,10 @@ COPY gradle $APP_HOME/gradle
 # --mount=type=secret: injects gradle.properties at build time only — it is never written
 #   into any image layer, so credentials (repo URL, username, password) are never extractable
 #   from the final image even with docker history or docker inspect.
+# Mount secret  named gradle_props  at /usr/app/gradle.properties. Secret exist only during RUN command execution
+
+
 # --mount=type=cache: mounts /root/.gradle as a persistent cache volume on the host machine.
-#   Unlike Docker layer cache, this cache survives --no-cache rebuilds.
 #   On subsequent builds, Gradle finds its dependencies already downloaded and skips the download.
 # gradle dependencies: resolves and downloads all dependencies without compiling any code.
 #   Creates a dedicated Docker layer — if build.gradle.kts doesn't change, this entire
@@ -97,6 +99,9 @@ COPY src $APP_HOME/src
 RUN --mount=type=secret,id=gradle_props,target=/usr/app/gradle.properties \
     --mount=type=cache,target=/root/.gradle \
     gradle shadowJar --no-daemon
+
+# Okay got it the image worked fine cause the mavenCentral() fallback, once commented build failed
+# secrets: gradle_props: file: ./gradle.properties was needed in compose to success
 
 # ===== JLINK STAGE =====
 # Defines the second stage named "jre-build".

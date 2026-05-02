@@ -1,6 +1,13 @@
 services:
   app:
-    build: .
+    build:
+      context: .
+      secrets:
+        - gradle_props
     image: project1:latest
     ports:
       - "43000:42000"
+
+secrets:
+  gradle_props:
+    file: ./gradle.properties

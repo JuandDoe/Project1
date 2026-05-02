@@ -859,7 +859,7 @@ failed to solve: failed to compute cache key: failed to calculate checksum of re
 - Unfortunately the current one run as root
 - Lets try to make it work as root first, then we will improve
 - Moved from openjdk for koretto as open JDK doesnt provide JDK 25. Stayed with alpine as its suposed to be light +fast
-- sent the Dockerfile. GPT said it was bullshit: redundant build, run as root.. and proposed a better version
+- At this point I had a basic Dockerfile working but Root user and all. Sent the Dockerfile. GPT said it was bullshit: redundant build, run as root.. and proposed a better version
 > failed to solve: failed to compute cache key: failed to calculate checksum of ref o3mleuczvsuvlhg4001owiqmx::vmipy2cda3d6cz1tevw6mqosd: "/settings.gradle": not found
 - Changed COPY build.gradle settings.gradle for  $APP_HOME/ COPY build.gradle.kts settings.gradle.kts $APP_HOME/ to match the file name
 >  ✔ Image project1-server       Built                                                                                                                                                                                53.1s
@@ -884,7 +884,7 @@ application {
 - My concetration level started droped so hard 
 
 - WE ARE BACK
-- Aded shadow plugging to my build.gradle.kts will allow me to compile my fat jar. This is necessary for two reasons : 
+- Added shadow plugging to my build.gradle.kts will allow me to compile my fat jar. This is necessary for two reasons : 
 1) A fat jar is a jar who contain all dependencies needed at runtime. It allow to run the application then in one line
 > java -jar myapplication.jar
 
@@ -920,7 +920,7 @@ java.lang.UnsupportedClassVersionError: org/example/Main has been compiled by a 
 - Worked + tested endpoint
 
 > docker build -t project1 .
-- Meme : -t = give a tag /name to image to avoid having only an idea/ "." indicate position of Dockerfile. the current directory in our case
+- -t = give a tag /name to image to avoid having only an idea/ "." indicate position of Dockerfile. the current directory in our case
 - Build O.K
 - lets check
 > docker images
@@ -946,19 +946,19 @@ docker: Error response from daemon: failed to create task for container: failed 
 1777586488307 HTTP server listening on port [42000]
 1777586488307 HTTP server started successfully
 22:01:28.307 [main] INFO org.example.Main -- Server started on port 42000 
-- IT WORKED :) 
-- Tested.. wait it doesnt work when i try to hit the api endpoint as i have an erro in browser tab
+- IT WORKED :) Hum wait letss check if it really does..
+- Tested.. wait it doesnt  when i try to hit the api endpoint as i have an error in browser tab
 > This site can’t be reached
 - I'm fool i mapped port as following : -p 43000:43000
 - But inside my app port is 42000 
 - <Port_Exposed_Docker>:<Port_Exposed_Java_app>
-- So i need to go for : 43000:42000
+- So i need to go for : 43000:42000Fixed Part2 
+- added back mavenCentral() as fallback
 > docker run -p 43000:42000 project1
 - WORKED.. FOR REALLL !!
 - Worked same with compose
 > docker compose up
-- WORKED AGAIN
-- Added image: project1:latest in compose as a matter of clarity so no need to read all the Dockerfile to get name of image builded
+- Added : image: project1:latest in compose as a matter of clarity so no need to read all the Dockerfile to get name of image builded
 >docker ps -a
 CONTAINER ID   IMAGE             COMMAND               CREATED          STATUS          PORTS                                                        NAMES
 972316f48fdd   project1:latest   "java -jar app.jar"   26 seconds ago   Up 25 seconds   43000/tcp, 0.0.0.0:43000->42000/tcp, [::]:43000->42000/tcp   1task-app-1
@@ -1055,7 +1055,7 @@ real 0m35.612s
 > docker system prune -a --volumes
 
 
-- wWthout any cache 
+- wWthout any cache, so it mean from my unde
 > #5  FROM gradle:9.5.0-jdk-alpine         DONE 6.0s   ← image pull
 #7  WORKDIR /usr/app (build)             DONE 0.2s
 #8  COPY build.gradle.kts settings...    DONE 0.0s
@@ -1138,10 +1138,165 @@ Code change rebuild      : 36s  →  8.7s      (-76%)
 - Now that the build works and that the server serve as expected i will break down the new Dockerfile lines by lines as I did for the previous one
 - This way i will either stop to feel guilty for vibecoding too much and take thoses new concepts as mine
 - I keep first Dockerfile but comment it, will be easier to keep track than only have it into logbook 
-- 
+- Aditional thought about reviewer comment on task2 about optimization : I think for Docker build, optimization is important faster than for java build/gradle itself. It fastly safe minutes and my zoomers brain hates minutes break so its better to shorten then while debugging
+
+- I maybe not have vibcoded that much the optimization part :(
+- I catch the main idea of multi stage Dockerfile
+- A bit like a rocket who go to space release one stage after one other when they are not needed. Only last FROM is kept for final image
+- This way we can use heavy tool WHILE having the minimal size image for runtime / payload reach orbit
+
+# ===== BUILD STAGE =====
+# Defines the first stage named "build".
+# Uses the official Gradle 9.5.0 image with JDK on Alpine Linux.
+# This stage is responsible for compiling the application and producing the JAR.
+# A stage start with FROM and  contain layers (a bit as objects contains fields)
+FROM gradle:9.5.0-jdk-alpine AS build
+
+# Declares an environment variable APP_HOME pointing to the app's working directory.
+ENV APP_HOME=/usr/app
+
+# Sets /usr/app as the current working directory for all subsequent instructions in this stage.
+WORKDIR $APP_HOME
+
+# Copies only the Gradle configuration files into the container.
+# Done before copying source code to create a separate Docker layer for dependency resolution.
+# If these files don't change, Docker reuses this cached layer on rebuild.
+COPY build.gradle.kts settings.gradle.kts $APP_HOME/
+
+# Copies the Gradle wrapper folder into the container.
+# Also isolated in its own layer for caching purposes.
+COPY gradle $APP_HOME/gradle
+
+# Downloads all project dependencies and caches them.
+# --mount=type=secret: injects gradle.properties at build time only — it is never written
+#   into any image layer, so credentials (repo URL, username, password) are never extractable
+#   from the final image even with docker history or docker inspect.
+# Mount secret  named gradle_props  at /usr/app/gradle.properties. Secret exist only during RUN command execution
 
 
+# --mount=type=cache: mounts /root/.gradle as a persistent cache volume on the host machine.
+#   On subsequent builds, Gradle finds its dependencies already downloaded and skips the download.
+# gradle dependencies: resolves and downloads all dependencies without compiling any code.
+#   Creates a dedicated Docker layer — if build.gradle.kts doesn't change, this entire
+#   step is skipped on rebuild via Docker layer cache.
+RUN --mount=type=secret,id=gradle_props,target=/usr/app/gradle.properties \
+--mount=type=cache,target=/root/.gradle \
+gradle dependencies --no-daemon
 
+# Copies only the source code into the container.
+# Placed after the dependency download step intentionally — modifying source code only
+# invalidates this layer and the ones after it, leaving the dependency layer cached.
+COPY src $APP_HOME/src
+
+# Compiles the source code and packages the application into a fat JAR (shadowJar).
+# Same secret and cache mounts as above:
+# - gradle.properties is injected securely for repo credentials
+# - /root/.gradle cache is reused so dependencies are not re-downloaded
+# gradle shadowJar: compiles Java sources and bundles all dependencies into a single JAR.
+# --no-daemon: prevents Gradle from starting a background daemon, suitable for containers.
+RUN --mount=type=secret,id=gradle_props,target=/usr/app/gradle.properties \
+--mount=type=cache,target=/root/.gradle \
+gradle shadowJar --no-daemon
+
+> --mount=type=cache,target=/root/.gradle \
+# Appear two times and i'm not able to say how/if its useful or not
+
+- Okay got it the image worked fine cause the mavenCentral() fallback, once commented,  build failed
+> secrets:
+    gradle_props: 
+      file: ./gradle.properties was needed in compose to success
+- Is needed in compose, to tell explicitely that the secret exist and where to find it
+
+# ===== JLINK STAGE =====
+# Defines the second stage named "jre-build".
+# Uses the full Corretto 25 JDK image solely to run jlink and produce a custom JRE.
+# This stage is discarded after the runtime stage copies its output.
+FROM amazoncorretto:25-alpine-jdk AS jre-build
+
+# Installs binutils which provides objcopy, required by jlink's --strip-debug option on Alpine.
+# Without this, jlink fails with "Cannot run program objcopy".
+# --no-cache: does not cache the apk index locally, keeping the layer smaller.
+RUN apk add --no-cache binutils
+
+# Builds a minimal custom JRE containing only the modules the application actually needs,
+# as determined by running jdeps on the fat JAR.
+# --add-modules: explicitly lists the required Java modules identified by jdeps.
+#   java.base        — core Java classes, always required
+#   java.desktop     — AWT/Swing and related classes
+#   java.instrument  — Java instrumentation API
+#   java.naming      — JNDI naming and directory services
+#   java.sql         — JDBC database access
+#   jdk.compiler     — Java compiler API
+#   jdk.unsupported  — sun.misc.Unsafe and other unofficial APIs used by many libraries
+# --strip-debug: removes debug symbols from the JRE, reducing its size.
+# --no-man-pages: excludes man page documentation files.
+# --no-header-files: excludes C header files used for native development.
+# --compress=zip-6: compresses the JRE resources using ZIP level 6 compression.
+# --output /jre-custom: writes the resulting custom JRE to /jre-custom inside this stage.
+RUN jlink \
+--add-modules java.base,java.desktop,java.instrument,java.naming,java.sql,jdk.compiler,jdk.unsupported \
+--strip-debug \
+--no-man-pages \
+--no-header-files \
+--compress=zip-6 \
+--output /jre-custom
+
+# ===== RUNTIME STAGE =====
+# Defines the final stage — the actual image that will be deployed.
+# Starts from bare Alpine 3.23 (~5MB) with no Java installed.
+# Only artifacts explicitly copied from previous stages are included.
+FROM alpine:3.23
+
+# Redeclares APP_HOME — environment variables do not carry over between stages.
+ENV APP_HOME=/usr/app
+
+# Sets /usr/app as the working directory for the runtime container.
+WORKDIR $APP_HOME
+
+# Copies the custom JRE produced by jlink into /opt/jre.
+# This is the only Java runtime in the final image — no full JDK, no unused modules.
+COPY --from=jre-build /jre-custom /opt/jre
+
+# Copies the fat JAR produced by the build stage into the working directory.
+# The wildcard *.jar matches the shadowJar output file regardless of its exact name.
+COPY --from=build /usr/app/build/libs/*.jar app.jar
+
+# Adds /opt/jre/bin to the PATH so the java command is available without its full path.
+ENV PATH="/opt/jre/bin:$PATH"
+
+# Creates a system group and a system user with no password, no home directory,
+# and no login shell — the container will run as this unprivileged user.
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+
+# Switches to appuser for all subsequent instructions including ENTRYPOINT.
+# The application runs without root privileges, limiting the impact of any security breach.
+USER appuser
+
+# Documents that the application listens on port 43000.
+# Does not open the port by itself — requires -p flag at docker run time.
+EXPOSE 43000
+
+# Defines the fixed startup command for the container.
+# Exec form (JSON array) passes arguments directly to the OS without a shell,  its possible only cause we aded Java to path
+# making java the PID 1 process so it correctly receives signals like SIGTERM.
+ENTRYPOINT ["java", "-jar", "app.jar"]
+
+- No clue how the hell I will remember to build one other like this but at least now it doesnt seem to much as chinese if I have to read a dockerfile
+- • builds the app, O.K
+  • runs it as a non-root user, O.K
+> USER appuse
+
+  • does not create OS users at container startup.
+- User created at build. Avoid being root even for a blink of eye
+
+  • Use docker compose to run the app O.K
+- docker compose up --build works from a clean state. OK
+- Cause it worked right after
+> docker system prune -a --volumes
+- Removes all stopped containers, unused networks, every image (tagged or not),
+  build cache, and volumes. Leaves only resources attached to running containers.
+while following command showed no running container
+> docker ps -a
 
 
 
