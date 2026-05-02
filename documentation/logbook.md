@@ -854,7 +854,40 @@ failed to solve: failed to compute cache key: failed to calculate checksum of re
 - No option for graddle with docker.. we will have to use brain :)
 - I remmeber blurrly that I heard about build stage and optimization but I dont mind for now lets just make something working
 - Stack. home sweet home  https://stackoverflow.com/questions/61108021/gradle-and-docker-how-to-run-a-gradle-build-within-docker-container
-- Adapted gradle version 
+- I found this as a template to begin with
+- # Source - https://stackoverflow.com/a/61131308
+# Posted by java12399900, modified by community. See post 'Timeline' for change history
+# Retrieved 2026-05-02, License - CC BY-SA 4.0
+
+# using multistage docker build
+# ref: https://docs.docker.com/develop/develop-images/multistage-build/
+
+# temp container to build using gradle
+FROM gradle:5.3.0-jdk-alpine AS TEMP_BUILD_IMAGE
+ENV APP_HOME=/usr/app/
+WORKDIR $APP_HOME
+COPY build.gradle settings.gradle $APP_HOME
+
+COPY gradle $APP_HOME/gradle
+COPY --chown=gradle:gradle . /home/gradle/src
+USER root
+RUN chown -R gradle /home/gradle/src
+
+RUN gradle build || return 0
+COPY . .
+RUN gradle clean build
+
+# actual container
+FROM adoptopenjdk/openjdk11:alpine-jre
+ENV ARTIFACT_NAME=pokerstats-0.0.1-SNAPSHOT.jar
+ENV APP_HOME=/usr/app/
+
+WORKDIR $APP_HOME
+COPY --from=TEMP_BUILD_IMAGE $APP_HOME/build/libs/$ARTIFACT_NAME .
+
+EXPOSE 8080
+ENTRYPOINT exec java -jar ${ARTIFACT_NAME}
+
 - Exercice says : runs it as a non-root user, does not create OS users at container startup.
 - Unfortunately the current one run as root
 - Lets try to make it work as root first, then we will improve
@@ -880,8 +913,8 @@ application {
   mainClass.set("org.example.Main")
   }
 - Docker should find the entry point then
-- Oh shit yes I remmember about this. My jar isnt a Fat/uber Jar so its 
-- My concetration level started droped so hard 
+- Oh shit yes I remmember about this. My jar isnt a Fat/uber Jar so we are missing few things at compilation time
+- My concentration level started droped so hard 
 
 - WE ARE BACK
 - Added shadow plugging to my build.gradle.kts will allow me to compile my fat jar. This is necessary for two reasons : 
@@ -899,7 +932,7 @@ application {
   }
 - Shadow not only import necessary dependencies at runtime but also  create the MANIFEST.MF wich contain metadata. Especially the entry point of the java program
 - Thanks to this when java -jar app.jar is performed, the JVM open the Jar and find the Main-Class and call it main()
-- To do so we just need on ecommand
+- To do so we just need on command
 > ./gradlew shadowJar
 - Went fine and fat jar was created
 > BUILD SUCCESSFUL in 8s
@@ -925,6 +958,7 @@ java.lang.UnsupportedClassVersionError: org/example/Main has been compiled by a 
 - lets check
 > docker images
 > project1:latest 9c6fb5fbf08b 376MB 0B
+- Now that we have a image who doesnt use root anymore, lets try to run it
 > docker run -p 43000:43000 project1
 docker: Error response from daemon: failed to create task for container: failed to create shim task: OCI runtime create failed: unable to retrieve OCI runtime error (open /run/containerd/io.containerd.runtime.v2.task/moby/e0034c1efecc2c0413842168b0250f472df585a2a205c1c01263636b140d688a/log.json: no such file or directory): exec: "nvidia-container-runtime": executable file not found in $PATH
 - Shit i probably fucked my nvidia drivers long time ago and run on intel CPU for a while without noticing
@@ -934,7 +968,8 @@ docker: Error response from daemon: failed to create task for container: failed 
 - Here we go lets try to install again properly
 - Didnt worked and i'm a bit too exausted to go deep there 
 > echo $XDG_SESSION_TYPE
-- I'm using Wayland as display server, not X11 and the config of nvidia seem to be a pain in ass. I remember now. I switched a while ago from X11 cause blablabla i read it was more modern etc.. then saw nvidia doesnt worked anylore an dswitched to cpu
+- I'm using Wayland as display server, not X11 and the config of nvidia seem to be a pain in ass. I remember now. I switched a while ago from X11 cause blablabla i read it was more modern etc.. then saw nvidia doesnt worked anylore an switched to cpu
+- In some way I breaked the rule as I should learn to set up wayland and nvidia runtime together, BUT GPU isnt needed for this container...so
 - i switched back default docker runtime from nvidia to runc
 > sudo nano /etc/docker/daemon.json
 - restart docker daemon 
@@ -946,7 +981,7 @@ docker: Error response from daemon: failed to create task for container: failed 
 1777586488307 HTTP server listening on port [42000]
 1777586488307 HTTP server started successfully
 22:01:28.307 [main] INFO org.example.Main -- Server started on port 42000 
-- IT WORKED :) Hum wait letss check if it really does..
+- IT WORKED :) Hum wait lets check if it really does..
 - Tested.. wait it doesnt  when i try to hit the api endpoint as i have an error in browser tab
 > This site can’t be reached
 - I'm fool i mapped port as following : -p 43000:43000
@@ -1132,13 +1167,14 @@ From scratch (no cache) : 48s  →  unchanged (first build always costs)
 Code change rebuild      : 36s  →  8.7s      (-76%)
 
 - Okay I must completly admit from jlint it was mostly "full" vibecoding. I just wanted an optimized stuff which build faster than my basic one.
-- There was a bit of error as Claude miss that alpine didnt endebed some tools. Its something I alrzdy saw on the past
+- There was a bit of error as Claude miss that alpine didnt endebed some tools. Its something I already saw on the past
 - Was solved in a few iteration
 - I also said to him to not pass credentials to the image as clear text
+- But I mixed what a secret mean, cause secret seem to be in clear inside RAM, the purpose is to not write them at anytime into image layers or final image
 - Now that the build works and that the server serve as expected i will break down the new Dockerfile lines by lines as I did for the previous one
 - This way i will either stop to feel guilty for vibecoding too much and take thoses new concepts as mine
 - I keep first Dockerfile but comment it, will be easier to keep track than only have it into logbook 
-- Aditional thought about reviewer comment on task2 about optimization : I think for Docker build, optimization is important faster than for java build/gradle itself. It fastly safe minutes and my zoomers brain hates minutes break so its better to shorten then while debugging
+- Aditional thought about reviewer comment on task2 about optimization : I think for Docker build, optimization is important faster than for java build/gradle itself. It fastly save minutes and my zoomers brain hates minutes break so its better to shorten then while debugging
 
 - I maybe not have vibcoded that much the optimization part :(
 - I catch the main idea of multi stage Dockerfile
@@ -1200,12 +1236,13 @@ gradle shadowJar --no-daemon
 
 > --mount=type=cache,target=/root/.gradle \
 # Appear two times and i'm not able to say how/if its useful or not
+- It is obviously. cause as wwe comment, each run command is an isolated process 
 
 - Okay got it the image worked fine cause the mavenCentral() fallback, once commented,  build failed
 > secrets:
     gradle_props: 
       file: ./gradle.properties was needed in compose to success
-- Is needed in compose, to tell explicitely that the secret exist and where to find it
+- Was needed in compose, to tell explicitely that the secret exist and where to find it
 
 # ===== JLINK STAGE =====
 # Defines the second stage named "jre-build".
@@ -1281,10 +1318,10 @@ EXPOSE 43000
 # making java the PID 1 process so it correctly receives signals like SIGTERM.
 ENTRYPOINT ["java", "-jar", "app.jar"]
 
-- No clue how the hell I will remember to build one other like this but at least now it doesnt seem to much as chinese if I have to read a dockerfile
+- No clue how the hell I will remember to build one other like this from scratch but at least now it doesnt seem to much as chinese if I have to read a dockerfile
 - • builds the app, O.K
   • runs it as a non-root user, O.K
-> USER appuse
+> USER appuser
 
   • does not create OS users at container startup.
 - User created at build. Avoid being root even for a blink of eye
@@ -1297,6 +1334,17 @@ ENTRYPOINT ["java", "-jar", "app.jar"]
   build cache, and volumes. Leaves only resources attached to running containers.
 while following command showed no running container
 > docker ps -a
+
+- Asked the reviewer about --build from clean state 
+- Gave me something11
+>  docker compose down -v --remove-orphans
+- Erase volumes, and containers not define in docker compose
+> docker compose up –build
+- Contenair gracefully started and reachable 
+
+> docker system prune -a --volumes
+- The scope of command is not fine, it act as a docker level and woulk act a bit as a catastrophiic "rm * INSIDE my docker install" (wich wasnt a problem as my install is new BUT the command gaved by reviewer is project scope, so what I will use for now)
+
 
 
 
