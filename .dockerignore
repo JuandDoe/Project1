@@ -1,0 +1,55 @@
+# Secrets
+gradle.properties
+*.pem
+*.key
+.env*
+
+# Specific folder
+no_push/
+repsy.txt
+
+# Build output
+build/
+.gradle/
+.kotlin/
+out/
+bin/
+*.jar
+
+# VCS
+.git/
+.gitignore
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+
+# IDE
+.idea/
+.vscode/
+*.iml
+*.iws
+*.ipr
+*.ipr
+
+# Java/Eclipse/NetBeans
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+/nbproject/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docs
+README*
+docs/

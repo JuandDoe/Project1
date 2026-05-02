@@ -1345,7 +1345,9 @@ while following command showed no running container
 > docker system prune -a --volumes
 - The scope of command is not fine, it act as a docker level and woulk act a bit as a catastrophiic "rm * INSIDE my docker install" (wich wasnt a problem as my install is new BUT the command gaved by reviewer is project scope, so what I will use for now)
 
-
+- Okay actually I think the reviewer will kill me. I just remember that  .dockerignore right now
+- What .dockerignore actually does : It make the image a bit smaller avoiding unecessary COPY to the docker build context
+- It avoid passing secret and senstitives data to the build context with COPY
 
 
 
