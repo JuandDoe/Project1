@@ -14,7 +14,7 @@ public class Main {
 
     static void main() throws InterruptedException {
 
-        final CountDownLatch latch = new CountDownLatch(2);
+        final CountDownLatch latch = new CountDownLatch(1);
         // logout or shutdown event
         Runtime.getRuntime().addShutdownHook(new Thread(() -> latch.countDown()));
 
@@ -51,4 +51,4 @@ public class Main {
         }
 
     }
-    }// test
+    }

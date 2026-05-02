@@ -30,7 +30,6 @@ bin/
 *.iml
 *.iws
 *.ipr
-*.ipr
 
 # Java/Eclipse/NetBeans
 .apt_generated

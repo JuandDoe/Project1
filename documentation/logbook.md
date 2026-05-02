@@ -1350,4 +1350,128 @@ while following command showed no running container
 - It avoid passing secret and senstitives data to the build context with COPY
 
 
+__________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________
+Part 3 FOLLOW UPS
+
+- The part 3 review  raises important ways to improve myself 
+
+1) My attention level drop when it come to polishing 
+2) I act before I check
+3) I fix, eventually, but after, once i already acted brainless
+
+- Those are deeps habits, way deeper than, only issues relatives to IT scope. But theses habits are bad. 
+- I Discussed the review of part 3 with Claude, with a clear goal : Building together a kind of reproducible patch to address the issues we listed just above
+- I think It must be set up as the highest priority
+- Added a pre_push_checklist.md inside code_review/ folder : The idea is to have a small checklist highlighting critical points before any work can be pushed / considered done
+
+## What is still broken
+
+**1. `Main.java` line 17: `final CountDownLatch latch = new CountDownLatch(2);`.** (Carryover from Part 1 follow-up.)
+- Change the value used for test : `final CountDownLatch latch = new CountDownLatch(2)` to `final CountDownLatch latch = new CountDownLatch(1)`
+- This way the hook work as intended by stoping the Java program gracefully when an even as a ctrl+c or a manual kill of process is send to the JVM
+- From there i wanted to dig a bit the difference between ctrl+c (SIGINT)) and a manual kill command (SIGTERM)
+- Went to Reddit : https://www.reddit.com/r/linuxadmin/comments/h9bzcc/what_is_the_difference_between_sigint_and_sigterm/?tl=fr
+- It seem as SIGINT interrupt the current operation but doesn't quit the current context. For example Claude gave me the example aof a Python program interrupted by ctrl+c : You stop the Python script but don't kill the python process itself
+- SIGTERM kills process itself gracefully. SIGKILL kill the process immediately. All programs don't bother themselves with the shades of different signals.
+
+**2. `Dockerfile` line 173: `EXPOSE 43000`.** (Carryover from your earlier Part 3 checkpoint.)
+
+- Fixed `EXPOSE 43000` to `EXPOSE 42000`
+- Fixed also the linked commentary 
+# Documents that the application listens on port 43000. 
+- Is now :
+# Documents that the application listens on port 42000.
+
+**3. The original Dockerfile commented out at the top of the new file (lines 1 to 44).** (New this round.)
+- Erased the commented old Dockerfile version in my Dockerfile
+
+**4. `Dockerfile` line 5: stray French text.** (New this round.)
+- Erased
+
+**`.dockerignore` has a duplicated line.** `*.ipr` appears on lines 32 and 33. Cosmetic.
+- Duplicated line erased
+
+**`build.gradle.kts` has accumulated dead dependencies.** `lombok` was added during your Part 2 wrong-credentials investigation and the project does not actually use it. `junit-jupiter-api:6.0.3` is marked in your own comment as *"not used dependencies so far. just here for repo logic testing/understanding"*. Both should either be removed or have a comment explaining why they stay. Carrying unused dependencies is a small cost on a small project and a real one on a big project; the habit to build now is "if it is not used, it is not declared."
+- `org.junit.jupiter:junit-jupiter-api:6.0.3`  and `org.projectlombok:lombok:1.18.46` erased from build.gradle.kts
+- noticed `tools.jackson.core:jackson-databind:3.1.2` was on the same case and erased it as well from build.gradle.kts
+
+- I erased some dependencies it mean as maybe my Docker image can be a tiny bit lighter now
+> rm -rf ~/.gradle/caches
+rm -rf ~/.gradle/kotlin-dsl
+rm -rf ~/.gradle/daemon
+./gradlew build
+- Lets now redo a fat jar without the erased dependencies 
+> ./gradlew shadowJar
+- let see what changed when it come to jdeps output and if me can erase some jave modules from Dockerfile to make the JRE lighter
+> jdeps --multi-release 25 \
+--ignore-missing-deps \
+--print-module-deps \
+build/libs/*.jar
+java.base,java.instrument,java.logging,java.naming,java.xml,jdk.compiler,jdk.unsupported
+
+- java.base,java.instrument,java.logging,java.naming,java.xml,jdk.compiler,jdk.unsupported
+Instead of :
+- java.base,java.desktop,java.instrument,java.naming,java.sql,jdk.compiler,jdk.unsupported
+
+- java.sql and java.desktop erased to Dockerfile 
+- java.xml and java.logging added to Dockerfile
+- Was surprised some module was added cause we only erased some dependencies but talking about my doubts to Claude, and he explained how more tailored and small was the new module compared to the previously embedded
+- asked a way to prove what he says
+> jlink --add-modules java. Desktop --output /tmp/jre-desktop
+du -sh /tmp/jre-desktop
+99M     /tmp/jre-desktop
+> jlink --add-modules java.sql --output /tmp/jre-sql
+du -sh /tmp/jre-sql
+72M     /tmp/jre-sql
+
+> jlink --add-modules java.logging --output /tmp/jre-logging
+du -sh /tmp/jre-logging
+59M     /tmp/jre-logging
+> jlink --add-modules java.xml --output /tmp/jre-xml
+du -sh /tmp/jre-xml
+71M     /tmp/jre-xml
+- Fact checked 
+
+- Lets build the final docker image from clean state
+> docker compose down -v --remove-orphans
+> docker compose up --build
+- Build and run as a charm
+
+- Fine, now we have done 
+- By "done" I mean : addressed a fix to all broken things referenced into REWIEW_PART3.md :
+## What is still broken
+## Two smaller notes
+
+- We will now check the pre_push_checklist.md
+- ## 1. Re-read the spec
+
+- [x ] Read every requirement **word for word** — not diagonally
+- [x ] Check previous review carryovers — is every pending fix actually applied?
+- Requirement was fixes asked by ## What is still broken (see ## What is still broken and ## Two smaller notes)
+- - They include new needed fixes and previous review carryovers
+- Forget to erase `// test` on line 54. Now erased.
+
+## 2. Re-read your code
+
+- [x ] Read every modified file **line by line** — you are actively looking for problems
+- [x ] Remove everything vestigial: commented-out code, test lines, accidental paste fragments
+- [x ] Check internal consistency: ports, variable names, constants — do they match across all files?
+
+- Feel already as a pain in the ass to check with serious.
+- Hopefully through git we can just look easily at what changed on files since last commit. Okay doable 
+- Done
+
+## 3. If you used an LLM to generate code
+
+- [ ] You can explain every non-trivial block out loud
+- [ ] You asked at least one "why" question and tested one assumption by changing a value and observing what happens
+
+- No LLM Generation in this commit
+
+## 4. Final check
+
+- [X ] Read your full diff once — everything the reviewer will see, you saw first
+
+- Read again the full diff
+- Read again logbook part. try to catch up typo and grammar mistakes. Checking autocorrect suggestion
 

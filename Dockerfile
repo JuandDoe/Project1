@@ -1,52 +1,3 @@
-## ===== BUILD STAGE =====
-#FROM gradle:9.5.0-jdk-alpine AS build
-#ENV APP_HOME=/usr/app
-#WORKDIR $APP_HOME
-#COPY build.gradle.kts settings.gradle.kts $APP_HOME/ dans ton docker-compose.yml.
-
-#COPY gradle $APP_HOME/gradle
-## Download and cache dependencies in a separate layer
-## Credentials are injected at build time via --mount=type=secret and never written to any layer
-#RUN --mount=type=secret,id=gradle_props,target=/usr/app/gradle.properties \
-#    --mount=type=cache,target=/root/.gradle \
-#    gradle dependencies --no-daemon
-## Copy source and build — cache hit on deps layer if only code changed
-#COPY src $APP_HOME/src
-#RUN --mount=type=secret,id=gradle_props,target=/usr/app/gradle.properties \
-#    --mount=type=cache,target=/root/.gradle \
-#    gradle shadowJar --no-daemon
-#
-## ===== JLINK STAGE =====
-#FROM amazoncorretto:25-alpine-jdk AS jre-build
-## objcopy is required by --strip-debug on Alpine
-#RUN apk add --no-cache binutils
-## Build a minimal custom JRE with only the modules the app needs
-#RUN jlink \
-#    --add-modules java.base,java.desktop,java.instrument,java.naming,java.sql,jdk.compiler,jdk.unsupported \
-#    --strip-debug \
-#    --no-man-pages \
-#    --no-header-files \
-#    --compress=zip-6 \
-#    --output /jre-custom
-#
-## ===== RUNTIME STAGE =====
-#FROM alpine:3.23
-#ENV APP_HOME=/usr/app
-#WORKDIR $APP_HOME
-## Copy the custom JRE from jlink stage
-#COPY --from=jre-build /jre-custom /opt/jre
-## Copy the fat JAR from build stage
-#COPY --from=build /usr/app/build/libs/*.jar app.jar
-#ENV PATH="/opt/jre/bin:$PATH"
-#RUN addgroup -S appgroup && adduser -S appuser -G appgroup
-#USER appuser
-#EXPOSE 43000
-#ENTRYPOINT ["java", "-jar", "app.jar"]
-
-# Enables BuildKit's advanced syntax features like --mount=type=secret and --mount=type=cache.
-# Must be the very first line of the Dockerfile.
-# syntax=docker/dockerfile:1
-
 # ===== BUILD STAGE =====
 # Defines the first stage named "build".
 # Uses the official Gradle 9.5.0 image with JDK on Alpine Linux.
@@ -130,7 +81,7 @@ RUN apk add --no-cache binutils
 # --compress=zip-6: compresses the JRE resources using ZIP level 6 compression.
 # --output /jre-custom: writes the resulting custom JRE to /jre-custom inside this stage.
 RUN jlink \
-    --add-modules java.base,java.desktop,java.instrument,java.naming,java.sql,jdk.compiler,jdk.unsupported \
+    --add-modules java.base,java.logging,java.instrument,java.naming,java.xml,jdk.compiler,jdk.unsupported \
     --strip-debug \
     --no-man-pages \
     --no-header-files \
@@ -168,9 +119,9 @@ RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 # The application runs without root privileges, limiting the impact of any security breach.
 USER appuser
 
-# Documents that the application listens on port 43000.
+# Documents that the application listens on port 42000.
 # Does not open the port by itself — requires -p flag at docker run time.
-EXPOSE 43000
+EXPOSE 42000
 
 # Defines the fixed startup command for the container.
 # Exec form (JSON array) passes arguments directly to the OS without a shell,
