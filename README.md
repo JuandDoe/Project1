@@ -7,7 +7,7 @@ A Java application built with Gradle and containerized with Docker.
 ## Requirements
 
 - Java 25+
-- Gradle
+- Gradle 9+
 - Docker & Docker Compose
 
 ---
