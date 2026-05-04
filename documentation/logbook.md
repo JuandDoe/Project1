@@ -1475,3 +1475,123 @@ du -sh /tmp/jre-xml
 - Read again the full diff
 - Read again logbook part. try to catch up typo and grammar mistakes. Checking autocorrect suggestion
 
+------------------------------------------------------------------------------------------------------------------------
+
+Part 4 – Intentional failure mode 
+
+(important clarification)
+
+You must **intentionally introduce at least one failure, then debug and fix it.**
+
+⚠️ This **does NOT mean adding a try/catch in the code.**
+**Do not artificially handle exceptions** just to create an error.
+
+What “intentional failure mode” means
+
+It means **misconfiguring the environment or runtime, like real production issues.**
+
+Examples (pick at least one):
+**• App binds to 127.0.0.1 inside Docker and is unreachable from the host.
+• Container runs as non-root but a required directory is owned by root.
+• Gradle fails to resolve dependencies due to missing/wrong repo credentials.
+• Container uses too much memory and becomes slow or unstable.**
+
+What I want you to practice
+• Reading logs and error messages
+• Using tools like docker logs, docker stats, ps, curl
+• Forming hypotheses (“this looks like a permission issue”)
+• Testing and confirming the cause
+• Applying a correct fix
+• Writing down why you thought it was the issue and how you verified it
+
+What I do NOT want
+• Adding try/catch blocks just to “handle” an error
+• Swallowing exceptions
+• Modifying business logic to fake a failure
+
+Rule of thumb:
+• If the fix is in Docker config, environment variables, permissions, memory limits, or networking, you’re doing it right.
+• If the fix is adding try/catch, you’re missing the point.
+
+- Before going any further, I think that a standardized checklist would be important before starting any kind of code. I rediscussed it with Claude 
+- The main goal is to keep it concise. Its important cause I want to build an habit there, as for the pre push checklist
+- I hate this idea, but I feel it as same pain as when you run for first time in a while. Fire inside lungs and throat but absolutely needed
+- From now, we are trying to iterate on creating professional habits. I want to turn from a slightly  chaotic to become a strictly well organized brain
+
+## On receiving a new task
+
+- [X ] Read the entire brief **once, slowly** — including the last lines
+- - [ ] Read it a **second time**, this time underlining every deliverable and every constraint
+- everything will end up highlithed..not realistic/useful
+
+- [X ] Write down in your own words: **what is the actual goal of this part?**
+- The goal is to create REALS bug on the project and documenting them carefully through the different steps (Documenting the creation of issue, then the way to diagnostic by debug it and finally the way to fix it)
+- The issues must be real, not faked (as a try catch only there to mimic for example)
+
+- [X ] List every explicit deliverable — nothing implied, only what is written
+- The goal is to create REALS bug on the project and documenting them carefully through the different steps (Documenting the creation of issue, then the way to diagnostic by debug it and finally the way to fix it)
+- The issues must be real, not faked (as a try catch only there to mimic for example)
+- Do this for each of the following issues 
+
+-  App binds to 127.0.0.1 inside Docker and is unreachable from the host.
+  • Container runs as non-root but a required directory is owned by root.
+  • Gradle fails to resolve dependencies due to missing/wrong repo credentials.
+  • Container uses too much memory and becomes slow or unstable.**
+
+- [X ] Identify any **warnings, rules, or "do NOT"** sections — treat them as hard constraints
+- No artificially faked issues 
+- Explain every step. Process logically. Don't run 
+
+- [ ] If something is ambiguous, **ask before starting** — not halfway through
+
+-  App binds to 127.0.0.1 inside Docker and is unreachable from the host.
+- Does it mean App expose 127.0.0.1  when running inside docker and that make it unreachable cause localhost from a docker container cant be reached from outside ?
+- Claude confirmed I understood well
+- Container runs as non-root but a required directory is owned by root.
+-  As an example there is a COPY layer BUT the directory involved by the copy instruction is owned by root. right ?
+- It seem a bit more complex than it. Can you elaborate ? 
+
+- Asked Clarifications to reviewer 
+- Quick aside before answering: asking now, before you start, is exactly the timing we have been pushing for three reviews. Good move. Now the answers.
+
+  Q1. You have it right. Container has its own network namespace, 127.0.0.1 inside it is only reachable from inside the container. Docker's -p 43000:42000 forwards host traffic to the container's bridge
+  interface, not to loopback, so a 127.0.0.1-bound app gets nothing.
+
+  For your code: new HTTPListenerConfiguration(port) defaults to all interfaces, which is why your app currently works through Docker. To introduce the failure for Part 4, use the constructor variant   
+  that takes a bind address and pass "127.0.0.1" (check the class for a (String, int) or (InetAddress, int) signature). To fix it back, drop the address argument or pass "0.0.0.0".
+
+  Q2. Broader than COPY. Everything created in the Dockerfile before the USER directive is owned by root: WORKDIR, COPY destinations, files from RUN commands, all of it. When the process switches to    
+  appuser, it inherits no ownership of any of that. It can usually read root-owned files (default permissions are world-readable). It cannot write to root-owned directories.
+
+  For your app specifically: this failure does not happen naturally because your app does not write to disk anywhere. Logback is using its default console appender, your handler returns HTTP responses  
+  without persisting anything. To create the failure for Part 4, the cleanest path is to add src/main/resources/logback.xml with a FileAppender writing to something like /usr/app/logs/server.log. The
+  app will fail at startup trying to create the file because /usr/app/ is root-owned (your WORKDIR /usr/app runs before USER appuser). To fix it back: in the Dockerfile, before USER appuser, run mkdir  
+  -p /usr/app/logs && chown -R appuser:appgroup /usr/app/logs.
+
+  The mental model worth keeping: USER switches who runs the process. It does not change who owns the files the process touches. Permission failures inside containers are almost always those two layers being out of step.
+
+
+
+PART 4
+
+- We are going to start this part by implementing the first issue
+
+- App binds to 127.0.0.1 inside Docker and is unreachable from the host.
+- following the reviewer anser about Q1 we should switch new HTTPListenerConfiguration wich take a int as argument
+- I wasn't very sure about what is a constructor variant, I asked Claude how it was different from using one another methode of the library
+- Claude showed me an example saying HTTPListenerConfiguration has not only one constructor 
+> HTTPListenerConfiguration
+> new HTTPListenerConfiguration("127.0.0.1", port)
+- I wondered how to find the list of thoses differents availables constructors, I erased the actual argument in my code
+- IDE hilghlithed in red and i move my mouse on it
+- A pop up appaeard : Cannot resolve constructor 'HTTPListenerConfiguration()'
+- The popu up showed all of the availables constructor 
+>Candidates for new HTTPListenerConfiguration() are:
+  HTTPListenerConfiguration(int port)
+  HTTPListenerConfiguration(int port, String certificate, String privateKey)
+  HTTPListenerConfiguration(int port, Certificate certificate, PrivateKey privateKey)
+  HTTPListenerConfiguration(int port, Certificate[] certificateChain, PrivateKey privateKey)
+  HTTPListenerConfiguration(InetAddress bindAddress, int port)
+  HTTPListenerConfiguration(InetAddress bindAddress, int port, String certificate, String privateKey)
+  HTTPListenerConfiguration(InetAddress bindAddress, int port, Certificate certificate, PrivateKey privateKey)
+
