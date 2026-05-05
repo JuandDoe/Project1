@@ -1825,7 +1825,15 @@ secrets:
   gradle_props:
     file: ./gradle.properties
 ```
--Lets update our GH secrets and then commit & push to test how it goes
+- Lets update our GH secrets and then commit & push to test how it goes
+- Failed
+> 1s
+Run export EXPOSED_PORT=$(grep "exposedPort" gradle.properties | cut -d'=' -f2)
+invalid hostPort:  43000
+Error: Process completed with exit code 1
+- I puted a space in my port name, leaded to the error
+- Fix & Try again
+
 
 
 
