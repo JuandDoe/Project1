@@ -1998,7 +1998,8 @@ repos:
 > pre-commit run --all-files
 Block gradle.properties from being committed.............................Failed
 
-- Lets try for real 
+- Let's try for real 
+- Commit Fail. Done
 
 PART 4
 
