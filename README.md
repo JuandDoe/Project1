@@ -36,21 +36,15 @@ Or override the defaults directly inline:
 
 ```bash
 APP_PORT=42000 EXPOSED_PORT=43000 docker compose up --build
-
-The application will be available at `http://localhost:43000`.
-
----
+```
 
 ## Project Structure
 
-```
+```bash
 src/main/java/org/example/   # Application source code
 documentation/               # Project documentation
 code_review/                 # Code review notes
 ```
-
----
-
 ## Configuration
 
 Copy `gradle.example.properties` to `gradle.properties` and fill in the required values.  
