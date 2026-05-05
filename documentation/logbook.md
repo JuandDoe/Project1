@@ -1575,12 +1575,12 @@ Rule of thumb:
 
 PART 3 FOLLOW UPS
 
-- I read the whole review twices as noted int the pre_start_checklist
+- I read the whole review twice as noted int the pre_start_checklist
 - Too excited to start
 - 
 
 - [X ] Write down in your own words: **what is the actual goal of this part?**
-- Small fixes + understanding what are gith hooks, then implementing some to address the listed issues 
+- Small fixes + understanding what are git hooks, then implementing some to address the listed issues 
 
 - [X ] List every explicit deliverable — nothing implied, only what is written
 
@@ -1604,28 +1604,28 @@ PART 3 FOLLOW UPS
 - Confirmed by Claude
 
 - **A CI step that runs the build from a clean clone, using only what is in the repo.** If `gradle.example.properties` keys do not match what `build.gradle.kts` expects, the build fails. CI fails. You see it before anyone reviews.
-- Okay, so far my understanding of CI (Continous Integration) Is about how we can automate build of a program, it come along the second side which is CD (continuous deployment)
-- Explained to Claude that concepts was a bit too blurry to implement and asked for some keywoard to begin my searches 
+- Okay, so far my understanding of CI (Continuous Integration) Is about how we can automate build of a program, it comes along the second side which is CD (continuous deployment)
+- Explained to Claude that concepts was a bit too blurry to implement and asked for some keyword to begin my searches 
 - He gave me ; CI/CD
   GitHub Actions
   Pipeline / Workflow
-- Lets start by the Github Action documentation
+- Let's start by the GitHub Action documentation
 
 - GitHub Actions is a continuous integration and continuous delivery (CI/CD) platform that allows you to automate your build, test, and deployment pipeline. 
 - You can create workflows that run tests whenever you push a change to your repository, or that deploy merged pull requests to production.
 - Now we have a clear definition of CI/CD from documentation
 
 - using only what is in the repo.** If `gradle.example.properties` keys do not match what `build.gradle.kts` expects, the build fails. 
-- Hum but what in our case cause some of keys on gradle have some secrets values for private repo authentification. So, now (apart from you as reviewer) a standard user on gh wouldnt be able to build (Maven  Centrfal act as fallback but my prvate hw dependencie cant be fetched without credential. 
-- Or, I should ad a larger scope credential for the repo (like a public shared credential) ? 
-- I think it wouldnt make sense cause in real life case if you have to provide repo access to everyone it seem as a security hole. and nothing is "private" anymore
-- Claude said it was correct and hint me to goole a bit about Github Secrets. I will keep going read the doc it will probably be one of the chapter of CI/CD
+- Hum but what in our case cause some of the keys on Gradle have some secrets values for private repo authentification. So, now (apart from you as reviewer) a standard user on gh wouldnt be able to build (Maven  Centrfal act as fallback but my prvate hw dependencie cant be fetched without credential. 
+- Or, I should add a larger scope credential for the repo (like a public shared credential) ? 
+- I think it wouldn't make sense cause in real life case if you have to provide repo access to everyone it seems as a security hole. and nothing is "private" anymore
+- Claude said it was correct and hint me to google a bit about GitHub Secrets. I will keep going read the doc it will probably be one of the chapter of CI/CD
 - Read a bit, saw a basic example, then went to action page on gh 
 - Found a template : Build a Docker image to deploy, run, or push to a registry.
-- Wait ; "A CI step that runs the build from a clean clone" seem a bit ambigous, gradle build, docker image build ? both ?
-- We will consider here that we need to do the more complete task so kets say : fuild build gradle + docker image
+- Wait ; "A CI step that runs the build from a clean clone" seem a bit ambiguous, Gradle build, docker image build ? both ?
+- We will consider here that we need to do the more complete task so kets say : fuild build Gradle + docker image
 
-- GH give us this templaet to start with
+- GH give us this template to start with
 
 > name: Docker Image CI
 
@@ -1646,9 +1646,9 @@ build:
     - name: Build the Docker image
       run: docker build . --file Dockerfile --tag my-image-name:$(date +%s)
 
-- It seeem to run docker build . --file Dockerfile --tag my-image-name:$(date +%s) for every push on master branch
+- It seems to run docker build . --file Dockerfile --tag my-image-name:$(date +%s) for every push on master branch
 - I said to claude that we need to adapt  : If `gradle.example.properties` keys do not match what `build.gradle.kts` expects, the build fails
-- For building the image we need to provides importants informations (in our case the credentials ) to github secrets 
+- For building the image we need to provide importants information (in our case the credentials ) to GitHub secrets 
 - I added the content of my gradle.properties to a newly created secret repository
 
 ```yaml
@@ -1867,7 +1867,7 @@ Network project1_default  Removing
 Network project1_default  Removed
 Successful HTTP request
 
-- Lets eat and then we will edit the action with ton of comment. I used Claude quite a lot but litle step after litle step and I feel as I understood everything who append clearly by discussing actively with him
+- Lets eat, and then we will edit the action with ton of comment. I used Claude quite a lot but litle step after litle step and I feel as I understood everything who append clearly by discussing actively with him
 
 ```yaml
 name: Smoke Test CI
@@ -1940,7 +1940,7 @@ To see if you’ve forgotten something, to make sure tests run, or to examine wh
 Exiting non-zero from this hook aborts the commit, although you can bypass it with git commit --no-verify. You can do things like check for code style (run lint or something equivalent), check for trailing whitespace (the default hook does exactly this), or check for appropriate documentation on new methods.
 
 - Asked Claude a tutorial source : https://adamj.eu/tech/2024/01/24/pre-commit-fail-hook/
-- I think I like this way : more active, less copy paste than when he does himself
+- I think I like this way : more active, less copy and paste than when he does himself
 - Grab the tutorial example
 
 ```yaml
@@ -2006,6 +2006,15 @@ Block gradle.properties from being committed.............................Failed
 - modified build.gradle.kts 
 - Should work. Let's try 
 - TEST
+- WORKED
+- 
+
+- **A simple grep check, in the pre-commit hook or in CI, that flags `TODO`, `// test`, `// TEMP`, or large blocks of commented-out code.** Catches the kind of vestigial-code review your checklist asks you to do by hand.
+
+- Will probably be a regular expression with a TODO OR // test OR // TEMP
+- But how to discriminate the end of big commented  out code section properly ?
+
+
 
 PART 4
 
