@@ -1710,9 +1710,20 @@ We will now making CI fail in purpose to check if it really works as expected
 
 1) commenting a key in gradle.example.properties
 - #repsyRepoUsername=example_repsyRepoUsername
+- fail as expected
+> Build file '/home/runner/work/Project1/Project1/build.gradle.kts' line: 33
+* What went wrong:
+  Could not get unknown property 'repsyRepoUsername' for root project '1task' of type org.gradle.api.Project.
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights from a Build Scan (powered by Develocity).
+> Get more help at https://help.gradle.org.
+BUILD FAILED in 32s
+Error: Process completed with exit code 1.
 
 2) Modifing a value of gh secrets to make step 2 fail
-- 
+- Erasing some value in GH secrets repository
 
 
 PART 4
