@@ -1856,6 +1856,17 @@ Error: Process completed with exit code 56.
 - Lets try again
 - BTW all this flag seem dirty I wonder idf tyhere is more classy way to do. We will see then
 
+- Worked 
+>  Container project1-app-1  Stopping
+Container project1-app-1  Stopped
+Container project1-app-1  Removing
+Container project1-app-1  Removed
+Network project1_default  Removing
+Network project1_default  Removed
+Successful HTTP request
+
+- Lets eat and then we will edit the action with ton of comment. I used Claude quite a lot but litle step after litle step and I feel as I understood everything who appednd clearly by discussing actively with him
+- 
 
 
 
