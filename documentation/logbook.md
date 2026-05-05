@@ -2021,6 +2021,13 @@ Block gradle.properties from being committed.............................Failed
 - Let's shut up and focus on project for now 
 
 - Added `//TEMP` inside Main.java to test the pre-commit hook
+- Failed. The commit pass, (?i) flag and pygrep seem to work a bit differently despite the regex101 check
+- Switch from 
+> entry: "(?i)TODO|FIXME|HACK|//\s*test|//\s*TEMP|XXX"
+
+To 
+> entry: "TODO|todo|FIXME|fixme|HACK|hack|XXX|//\s*[Tt][Ee][Ss][Tt]|//\s*[Tt][Ee][Mm][Pp]"
+
 
 
 

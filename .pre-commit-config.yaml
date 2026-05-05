@@ -9,8 +9,7 @@ repos:
         -   id: block-todo-comments
             name: Block TODO / FIXME commented-out code
             language: pygrep
-            entry: "(?i)TODO|FIXME|HACK|//\s*test|//\s*TEMP|XXX"
-            # (?!) Make the whole regular expression not sensible to case
+            entry: "TODO|todo|FIXME|fixme|HACK|hack|XXX|//\s*[Tt][Ee][Ss][Tt]|//\s*[Tt][Ee][Mm][Pp]"
             # MATCH : characters TODO, FIXME, HACK, XXX all  literally and non cases sensitive
             # Match any kind of invisible character between "//" and "test", same for "//" and "temp"
             files: \.(kt|java|groovy|kts)$
