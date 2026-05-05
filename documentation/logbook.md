@@ -1701,6 +1701,8 @@ Contrairement a ce que soutenait Claude, l
 - Basically we copy the example file to the gradle.properties. If name of properties doesnt match => fail
   It works even without values, build.gradle.kts only checks the key match, not the value
 - This comment is wrong. Gradle try imediately to convert the value into an uri 
+- Right comment would be :
+#  If a key is missing OR if a value has an invalid format (e.g. empty string for a URI) => fail
 - Lets put the value in gradle.exemple.properties at "https://example.com", other blank values will be set up at : "example_" + "key"
 
 
