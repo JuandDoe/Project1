@@ -1705,6 +1705,15 @@ Contrairement a ce que soutenait Claude, l
 #  If a key is missing OR if a value has an invalid format (e.g. empty string for a URI) => fail
 - Lets put the value in gradle.exemple.properties at "https://example.com", other blank values will be set up at : "example_" + "key"
 
+- CI worked 
+We will now making CI fail in purpose to check if it really works as expected
+
+1) commenting a key in gradle.example.properties
+- #repsyRepoUsername=example_repsyRepoUsername
+
+2) Modifing a value of gh secrets to make step 2 fail
+- 
+
 
 PART 4
 
