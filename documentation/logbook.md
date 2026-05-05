@@ -1725,7 +1725,30 @@ Error: Process completed with exit code 1.
 2) Modifing a value of gh secrets to make step 2 fail
 - Erasing some value in GH secrets repository
 - Push
-
+>  > [build 5/7] RUN --mount=type=secret,id=gradle_props,target=/usr/app/gradle.properties     --mount=type=cache,target=/root/.gradle     gradle dependencies --no-daemon:
+33.53 Could not get unknown property 'repsyUrl' for root project '1task' of type org.gradle.api.Project.
+33.53
+33.53 * Try:
+33.53 > Run with Configuration cache entry stored.
+33.53 --stacktrace option to get the stack trace.
+33.53 > Run with --info or --debug option to get more log output.
+33.53 > Run with --scan to get full insights from a Build Scan (powered by Develocity).
+33.53 > Get more help at https://help.gradle.org.
+33.53
+33.53 BUILD FAILED in 33s
+------
+Dockerfile:35
+--------------------
+34 |     #   step is skipped on rebuild via Docker layer cache.
+35 | >>> RUN --mount=type=secret,id=gradle_props,target=/usr/app/gradle.properties \
+36 | >>>     --mount=type=cache,target=/root/.gradle \
+37 | >>>     gradle dependencies --no-daemon
+38 |
+--------------------
+ERROR: failed to build: failed to solve: process "/bin/sh -c gradle dependencies --no-daemon" did not complete successfully: exit code: 1
+Error: Process completed with exit code 1.
+- Failed as expected
+- Lets fix back the GH secrets repository wityh all proper values
 
 PART 4
 
