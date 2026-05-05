@@ -2083,6 +2083,12 @@ pre-commit install --overwrite
 - unstaged everything and checked with gits status
 - erased //TEMP from Main.java
 - Commit and push worked
+- Same when tested again to block push when gradle.properties was staged
+
+- Well well well. Lost sooo much time on this 
+> pre-commit install --overwrite
+- At least I'm a bit proud of the fact all CI and git hook asked works
+- Will read the whole logbook part again, correct typos, read again about the concepts once again. everything seem clear now but better come back on it
 
 
 PART 4
