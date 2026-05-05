@@ -1,0 +1,38 @@
+name: Docker Image CI
+
+# Appen on every psuh on master branch
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      # This action checks-out your repository under $GITHUB_WORKSPACE, so your workflow can access it.
+
+
+
+      # STEP 1 : Coherence check (No secret needed)
+      # Basically we copy the example file to the gradle.properties. If name of properties doesnt match => fail
+      # It works even without values, build.gradle.kts only checks the key match, not the value
+      - name: Check gradle.example.properties is valid
+        run: |
+          cp gradle.example.properties gradle.properties
+          ./gradlew help --no-daemon
+
+      # STEP 2 : Docker build (Using GH Secrets)
+      # We put the content of the GH secret GRADLE_PROPERTIES into gradle.properties
+      - name: Create gradle.properties from secret
+        run: echo "${{ secrets.GRADLE_PROPERTIES }}" > gradle.properties
+
+      # Finally we build the image with the secret from the GH secrets repository
+      - name: Build Docker image
+        run: |
+          docker build . \
+            --secret id=gradle_props,src=gradle.properties \
+            --file Dockerfile \
+            --tag my-image-name:$(date +%s)
