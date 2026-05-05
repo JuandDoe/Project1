@@ -2037,6 +2037,11 @@ To
 - Ofc I will just check some big SOTA open sourrce java project and find what they have as pre commit hook. I can neither use or fork
 - Hum it seem as big projects (at least looked springboot repo, make most of verifications without pre-commit
 - Lets back to something simple
+- Tried another syntax with Claude
+- Same issue
+- OMG..
+- I didnt installed on this machine
+> sudo apt install pre-commit
 
 
 
