@@ -2012,7 +2012,15 @@ Block gradle.properties from being committed.............................Failed
 - **A simple grep check, in the pre-commit hook or in CI, that flags `TODO`, `// test`, `// TEMP`, or large blocks of commented-out code.** Catches the kind of vestigial-code review your checklist asks you to do by hand.
 
 - Will probably be a regular expression with a TODO OR // test OR // TEMP
+- I found a nice website to check easily regex Claude give : https://regex101.com/
 - But how to discriminate the end of big commented  out code section properly ?
+- Claude said something funny : My advice: leave it to code review rather than over-engineering the hook.
+- Well okay I will be a pussy here. I know I should learn basic shell scrip for these kind of tasks seem a mountain tbh
+- I mean probably after gew hours I will understand what the snippet does but tomorrow I will forget
+- I should maybe take a whole day just paper and GNU doc but I will forget the day after.. as always :(
+- Let's shut up and focus on project for now 
+
+- Added `//TEMP` inside Main.java to test the pre-commit hook
 
 
 
