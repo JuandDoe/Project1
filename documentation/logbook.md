@@ -1742,13 +1742,13 @@ Dockerfile:35
 34 |     #   step is skipped on rebuild via Docker layer cache.
 35 | >>> RUN --mount=type=secret,id=gradle_props,target=/usr/app/gradle.properties \
 36 | >>>     --mount=type=cache,target=/root/.gradle \
-37 | >>>     gradle dependencies --no-daemon
+37 | >>> Gradle dependencies --no-daemon
 38 |
 --------------------
 ERROR: failed to build: failed to solve: process "/bin/sh -c gradle dependencies --no-daemon" did not complete successfully: exit code: 1
 Error: Process completed with exit code 1.
 - Failed as expected
-- Lets fix back the GH secrets repository wityh all proper values
+- Let's fix back the GH secrets repository wityh all proper values
 - Worked 
 
 - **A CI step that does `docker compose up --build` and hits the `/test` endpoint.** Catches the EXPOSE port mismatch we discussed in the Part 3 review. Catches network binding failures (relevant for Part 4 directly). Catches a whole class of "works on my machine" bugs.
@@ -1928,7 +1928,77 @@ app-1  | 13:24:52.659 [main] INFO org.example.Main -- Server started on port 460
 - Both direct gradlew build and Docker Compose port configuration work. Nothing hardcoded anymore. Resilient as there is fallback values set up
 
 - Just realized how It's difficult to keep focus while doing phone customer support on the meantime
-- Anyxay, its fine. Lets commit & push we are half of the way
+- Anyway, it's fine. Let's commit & push we are half of the way
+
+- **A pre-commit hook that fails if `gradle.properties` is staged.** Would have prevented the original credentials leak before any commit happened.
+
+- Git Hook are different than github actions, they arent linked to github
+- - A bit more directly from the documentation of git :
+
+The pre-commit hook is run first, before you even type in a commit message. It’s used to inspect the snapshot that’s about to be committed
+To see if you’ve forgotten something, to make sure tests run, or to examine whatever you need to inspect in the code. 
+Exiting non-zero from this hook aborts the commit, although you can bypass it with git commit --no-verify. You can do things like check for code style (run lint or something equivalent), check for trailing whitespace (the default hook does exactly this), or check for appropriate documentation on new methods.
+
+- Asked Claude a tutorial source : https://adamj.eu/tech/2024/01/24/pre-commit-fail-hook/
+- I think I like this way : more active, less copy paste than when he does himself
+- Grab the tutorial example
+
+```yaml
+repos:
+-   repo: local
+    hooks:
+    -   id: check-fixture-types
+        name: Check fixture types
+        language: fail
+        entry: Please convert non-YAML fixtures to YAML.
+        files: /fixtures/
+        exclude_types: [yaml]
+```
+- Adapted with a regular expression
+
+```yaml
+repos:
+-   repo: local
+    hooks:
+    -   id: block-gradle-properties
+        name: Block gradle.properties from being committed
+        language: fail
+        entry: "gradle.properties must not be committed — use gradle.example.properties instead"
+        files: /fixtures/
+        exclude_types: ^gradle\.properties$
+```
+> sudo apt install pre-commit
+- This command creates the .git/hooks/pre-commit file, which will be executed automatically on every git commit. 
+- Without it, the .pre-commit-config.yaml file exists but does nothing.
+> pre-commit run --all-files
+An error has occurred: InvalidConfigError:
+==> File .pre-commit-config.yaml
+==> At Config()
+==> At key: repos
+==> At Repository(repo='local')
+==> At key: hooks
+==> At Hook(id='block-gradle-properties')
+==> At key: exclude_types
+=====> Expected array but got 'str'
+Check the log at /home/agschwind/.cache/pre-commit/pre-commit.log
+
+- Claude Said : The error is clear — there's no exclude_types in our config, so you must have an older version. Replace with exactly this:
+
+```yaml
+repos:
+  - repo: local
+    hooks:
+      - id: block-gradle-properties
+        name: Block gradle.properties from being committed
+        language: fail
+        entry: "gradle.properties must not be committed — use gradle.example.properties instead"
+        files: ^gradle\.properties$
+```
+- It works. Failure, as expected
+> pre-commit run --all-files
+Block gradle.properties from being committed.............................Failed
+
+- Lets try for real 
 
 PART 4
 

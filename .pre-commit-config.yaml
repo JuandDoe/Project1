@@ -1,0 +1,8 @@
+repos:
+  -   repo: local
+      hooks:
+        -   id: block-gradle-properties
+            name: Block gradle.properties from being committed
+            language: fail
+            entry: "gradle.properties must not be committed — use gradle.example.properties instead"
+            files: ^gradle\.properties$
