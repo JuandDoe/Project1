@@ -2082,7 +2082,7 @@ pre-commit install --overwrite
 > git restore --staged .pre-commit-config.yaml README.md documentation/logbook.md src/main/java/org/example/Main.java
 - unstaged everything and checked with gits status
 - erased //TEMP from Main.java
-
+- Commit and push worked
 
 
 PART 4
