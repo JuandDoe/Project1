@@ -17,8 +17,7 @@ jobs:
 
 
       # STEP 1 : Coherence check (No secret needed)
-      # Basically we copy the example file to the gradle.properties. If name of properties doesnt match => fail
-      # It works even without values, build.gradle.kts only checks the key match, not the value
+      #  If a key is missing OR if a value has an invalid format (e.g. empty string for a URI) => fail
       - name: Check gradle.example.properties is valid
         run: |
           cp gradle.example.properties gradle.properties
