@@ -1754,30 +1754,32 @@ Error: Process completed with exit code 1.
 - **A CI step that does `docker compose up --build` and hits the `/test` endpoint.** Catches the EXPOSE port mismatch we discussed in the Part 3 review. Catches network binding failures (relevant for Part 4 directly). Catches a whole class of "works on my machine" bugs.
 
 - Asked Claude what would be a proper name for this GA 
-- He told about slike test 
-- I found it fun and google, it seem something who match what we are doing
+- He told about smoke test 
+- I found it fun and googled, it seem something who match what we are doing
 > a subset of test cases that cover the most important functionality of a component or system. 
 Used to aid assessment of whether main functions of the software appear to work correctly.
 
 - Discussed a bit abou Claude
 - His first version wasnt fine on my opinion as there wasnt retry on curl command, the CI just testd endpoint once after 5 seconds. 
 - I set up retry and delay to a reasonable amount
-- The port in the curl command was fix
-- I proposed to add a appPort properties in gradle.properties to make the port choice dynamic. It parse th properties value from GH secrets
+  - The port in the curl command was hardcoded
+- I proposed to add a appPort properties in gradle.properties to make the port choice dynamic. It parse the properties value from GH secrets
 - It also make me think I should make the Dockerfile dynamic when it come to port choice. So we will use this new propertie
 - We will also use this new propertie in our main at .withListener(new HTTPListenerConfiguration(42000))) so the dynamic choice is consistant and we get ride of hardcoded value
-- Added in build.gradle.kts. I described and asked Syntax to Claude 
+- Added in build.gradle.kts. I described the need of an environement variable and asked Syntax to Claude 
 > tasks.named<JavaExec>("run") {
   environment("APP_PORT", project.findProperty("appPort")?.toString() ?: "42000")
   }
-- So we can test build only ./gradlew build with dynamic syntax
+- So we will be able to test build only ./gradlew run with dynamic syntax
 - int port = Integer.parseInt(System.getenv().getOrDefault("APP_PORT", "42000"));
-- CHange EXPOSE 42000 to 
+- Allow us to make port listened by server dynamic
+- Change EXPOSE 42000 to 
 ># Documents that the application listens on port $EXPOSED_PORT
 # Does not open the port by itself — requires -p flag at docker run time.
 ARG EXPOSED_PORT=43000
 EXPOSE $EXPOSED_PORT
-- Had a long discussion with Claude about making both ports (inside and outside container) fully dynamic. samely for local java+gradle only test and for full docker usecase 
+- Cosmetic
+- Had a long discussion with Claude about making both ports (inside and outside container) fully dynamic. samely for local java+gradle only test and for full docker use case 
 
 ```yaml
 name: Docker Image CI
@@ -1854,7 +1856,7 @@ Error: Process completed with exit code 56.
 - --retry-connrefused → retries when port is not open yet.
   --retry-all-errors → retries on any error, including Connection reset by peer (JVM started but app not ready yet).
 - Lets try again
-- BTW all this flag seem dirty I wonder idf tyhere is more classy way to do. We will see then
+- BTW all this flag seem dirty I wonder if there is more classy way to do. We will see then
 
 - Worked 
 >  Container project1-app-1  Stopping
@@ -1865,12 +1867,68 @@ Network project1_default  Removing
 Network project1_default  Removed
 Successful HTTP request
 
-- Lets eat and then we will edit the action with ton of comment. I used Claude quite a lot but litle step after litle step and I feel as I understood everything who appednd clearly by discussing actively with him
-- 
+- Lets eat and then we will edit the action with ton of comment. I used Claude quite a lot but litle step after litle step and I feel as I understood everything who append clearly by discussing actively with him
 
+```yaml
+name: Smoke Test CI
 
+# Append on every push or pull_request on master branch
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
 
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    # The CI run on  a ubuntu-latest image container
+    steps:
+      - uses: actions/checkout@v6
+        # Checkout the repo to the container
 
+      # STEP 1 : Create gradle.properties from GH Secret
+      - name: Create gradle.properties from secret
+        run: echo "${{ secrets.GRADLE_PROPERTIES }}" > gradle.properties
+
+      # STEP 2 : Build image via compose (secrets handled in docker-compose.yml) and smoke test
+      - name: Check /test endpoint to catch eventual port mismatch
+        run: |
+          export EXPOSED_PORT=$(grep "exposedPort" gradle.properties | cut -d'=' -f2)
+      # Parse exposedPort value  from gradle.properties and set this value to EXPOSED_PORT
+      # export EXPOSED_PORT makes the value  the variable available to child processes of the current shell. including Docker compose 
+          docker compose up -d --build
+       # Start container in detached mode (returns prompt immediately instead of blocking on logs)
+          curl --fail --retry 10 --retry-delay 8 --retry-connrefused --retry-all-errors http://localhost:$EXPOSED_PORT/test
+          docker compose down
+```
+- curl --retry 10 --retry-delay 8 --retry-all-errors http://localhost:$EXPOSED_PORT/test
+- instead of 
+- curl --fail --retry 10 --retry-delay 8 --retry-connrefused --retry-all-errors http://localhost:$EXPOSED_PORT/test
+
+- Added instruction in README.md for : Override  Docker compose port values  / Export variable instruction
+> APP_PORT=46000 EXPOSED_PORT=47000 docker compose up
+
+> 1777984908315 Starting the HTTP server. Buckle up!
+    app-1  | 1777984908334 HTTP server listening on port [42000]
+    app-1  | 1777984908334 HTTP server started successfully
+    app-1  | 12:41:48.334 [main] INFO org.example.Main -- Server started on port 46000
+- I forget to put the dynamic value. I remove it now
+> pp-1  | 13:24:52.623 [main] INFO org.example.Main -- Fuck off procrastination!
+app-1  | 1777987492650 Starting the HTTP server. Buckle up!
+app-1  | 1777987492659 HTTP server listening on port [46000]
+app-1  | 1777987492659 HTTP server started successfully
+app-1  | 13:24:52.659 [main] INFO org.example.Main -- Server started on port 46000
+- Perfect 
+- Now lets check if ./gradlew run work fine too
+- appPort=48000 in gradle.propertie
+  > 1777987998881 HTTP server listening on port [48000]
+  1777987998881 HTTP server started successfully
+  15:33:18.881 [main] INFO org.example.Main -- Server started on port 48000
+- Both direct gradlew build and Docker Compose port configuration work. Nothing hardcoded anymore. Resilient as there is fallback values set up
+
+- Just realized how It's difficult to keep focus while doing phone customer support on the meantime
+- Anyxay, its fine. Lets commit & push we are half of the way
 
 PART 4
 

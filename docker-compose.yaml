@@ -6,9 +6,12 @@ services:
         - gradle_props
     image: project1:latest
     environment:
+
       - APP_PORT=${APP_PORT:-42000}
+      - EXPOSED_PORT=${EXPOSED_PORT:-43000}
     ports:
       - "${EXPOSED_PORT:-43000}:${APP_PORT:-42000}"
+      # -VALUE us a bash variable substitution: if the variable is not set (or empty), the default value is used.
 
 secrets:
   gradle_props:

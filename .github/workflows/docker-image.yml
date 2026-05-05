@@ -33,3 +33,5 @@ jobs:
             --secret id=gradle_props,src=gradle.properties \
             --file Dockerfile \
             --tag my-image-name:$(date +%s)
+         docker compose down
+

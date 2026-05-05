@@ -24,9 +24,18 @@ cp gradle.example.properties gradle.properties
 
 ### Run with Docker
 
+Export the required environment variables before starting:
+
 ```bash
+export APP_PORT=42000
+export EXPOSED_PORT=43000
 docker compose up --build
 ```
+
+Or override the defaults directly inline:
+
+```bash
+APP_PORT=42000 EXPOSED_PORT=43000 docker compose up --build
 
 The application will be available at `http://localhost:43000`.
 
