@@ -10,6 +10,13 @@ A Java application built with Gradle and containerized with Docker.
 - Gradle 9+
 - Docker & Docker Compose
 
+## Optional
+- pre-commit hooks 4.20
+```bash
+pip install pre-commit==4.2.0
+pre-commit install --overwrite
+```
+
 ---
 
 ## Getting Started

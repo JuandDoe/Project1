@@ -2041,9 +2041,47 @@ To
 - Same issue
 - OMG..
 - I didnt installed on this machine
-> sudo apt install pre-commit
+> sudo apt install pre-commit 
+> entry: "(?i)(TODO|FIXME|HACK|XXX|//\\s*(test|temp))"
+> entry: "(?i)(TODO|FIXME|HACK|XXX|//\\s*(test|temp))"
+- SAME
+- Just fuck you regular expression
+- Maybe bash script
 
+-OMFFG 
+> home/ant/IdeaProjects/1task] git /usr/bin/git -c credential.helper= -c core.quotepath=false -c log.showSignature=false add --ignore-errors -A -f -- .pre-commit-config.yaml documentation/logbook.md src/main/java/org/example/Main.java
+01:05:42.199: [/home/ant/IdeaProjects/1task] git /usr/bin/git -c credential.helper= -c core.quotepath=false -c log.showSignature=false commit -F /tmp/git-commit-msg-5020869790962771.txt --
+An error has occurred: InvalidConfigError:
+==> File .pre-commit-config.yaml
+==> At Config()
+==> At key: repos
+==> At Repository(repo='local')
+==> At key: hooks
+==> At Hook(id='block-gradle-properties')
+==> At key: exclude_types
+=====> Expected array but got 'str'
+Check the log at /home/ant/.cache/pre-commit/pre-commit.log
+- Well..at least now comit anymore
+> pre-commit install --overwrite
+- Worked. I spent so much hours. Stupid slow brain & memory :(
+- Fuck.. I did shit the other day installing and then moved on 
+- The .git/hooks/pre-commit file was owned by git-secrets. Running pre-commit install --overwrite replaced it with the pre-commit framework runner
+- Which now executes all hooks defined in .pre-commit-config.yaml on every commit.
+- But the version of pre-commit will have to be consistent among computers are use or it will be a mess
+> pre_comit --version
+- pre-commit 4.2.0
 
+- README.md update needed.
+## Optional
+- pre-commit hooks 4.20
+```bash
+pip install pre-commit==4.2.0
+pre-commit install --overwrite
+```
+
+> git restore --staged .pre-commit-config.yaml README.md documentation/logbook.md src/main/java/org/example/Main.java
+- unstaged everything and checked with gits status
+- erased //TEMP from Main.java
 
 
 

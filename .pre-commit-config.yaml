@@ -4,9 +4,8 @@ repos:
         -   id: block-gradle-properties
             name: Block gradle.properties from being committed
             language: fail
-            entry: "gradle.properties must not be committed ? use gradle.example.properties instead"
-            exclude_types: ^gradle\.properties$
-
+            entry: "gradle.properties must not be committed - use gradle.example.properties instead"
+            files: (^|/)gradle\.properties$
         -   id: block-todo-comments
             name: Block TODO / FIXME commented-out code
             language: pygrep
