@@ -1724,6 +1724,7 @@ Error: Process completed with exit code 1.
 
 2) Modifing a value of gh secrets to make step 2 fail
 - Erasing some value in GH secrets repository
+- Push
 
 
 PART 4
