@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      # This action checks-out repository under $GITHUB_WORKSPACE, so your workflow can access it.
+        # This action checks-out repository under $GITHUB_WORKSPACE, so workflow can access it.
 
       # STEP 1 : Coherence check (No secret needed)
       #  If a key is missing OR if a value has an invalid format (e.g. empty string for a URI) => fail
@@ -22,16 +22,15 @@ jobs:
           ./gradlew help --no-daemon
 
       # STEP 2 : Docker build (Using GH Secrets)
-      # We put the content of the GH secret GRADLE_PROPERTIES into gradle.properties
+      # Put the content of the GH secret GRADLE_PROPERTIES into gradle.properties
       - name: Create gradle.properties from secret
         run: echo "${{ secrets.GRADLE_PROPERTIES }}" > gradle.properties
 
-      # Finally we build the image with the secret from the GH secrets repository
+      # Finally, build the image with the secret from the GH secrets repository
       - name: Build Docker image
         run: |
           docker build . \
             --secret id=gradle_props,src=gradle.properties \
             --file Dockerfile \
             --tag my-image-name:$(date +%s)
-         docker compose down
 

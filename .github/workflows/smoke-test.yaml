@@ -23,5 +23,4 @@ jobs:
           export EXPOSED_PORT=$(grep "exposedPort" gradle.properties | cut -d'=' -f2)
           docker compose up -d --build
           curl --retry 10 --retry-delay 8 --retry-all-errors http://localhost:$EXPOSED_PORT/test
-      # Make a curl request to http://localhost:$EXPOSED_PORT/test retry 10 times each 8 seconds if any error append
           docker compose down
