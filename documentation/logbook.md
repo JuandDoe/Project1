@@ -2005,6 +2005,7 @@ Block gradle.properties from being committed.............................Failed
 > git status
 - modified build.gradle.kts 
 - Should work. Let's try 
+- TEST
 
 PART 4
 
