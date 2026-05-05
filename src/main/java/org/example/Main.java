@@ -18,7 +18,7 @@ public class Main {
         // logout or shutdown event
         Runtime.getRuntime().addShutdownHook(new Thread(() -> latch.countDown()));
 
-        int port = 42000;
+        int port = Integer.parseInt(System.getenv().getOrDefault("APP_PORT", "42000"));
 
         logger.info("Fuck off procrastination!");
         HTTPHandler handler = (req, res) -> {
@@ -38,7 +38,6 @@ public class Main {
             }
 
         };
-
         try (HTTPServer server = new HTTPServer().withHandler(handler)
                 .withListener(new HTTPListenerConfiguration(42000))) {
             server.start();

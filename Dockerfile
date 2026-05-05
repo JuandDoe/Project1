@@ -119,9 +119,11 @@ RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 # The application runs without root privileges, limiting the impact of any security breach.
 USER appuser
 
-# Documents that the application listens on port 42000.
+# Documents that the application listens on port $EXPOSED_PORT
 # Does not open the port by itself — requires -p flag at docker run time.
-EXPOSE 42000
+ARG EXPOSED_PORT=43000
+EXPOSE $EXPOSED_PORT
+
 
 # Defines the fixed startup command for the container.
 # Exec form (JSON array) passes arguments directly to the OS without a shell,

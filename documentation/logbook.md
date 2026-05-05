@@ -1749,6 +1749,86 @@ ERROR: failed to build: failed to solve: process "/bin/sh -c gradle dependencies
 Error: Process completed with exit code 1.
 - Failed as expected
 - Lets fix back the GH secrets repository wityh all proper values
+- Worked 
+
+- **A CI step that does `docker compose up --build` and hits the `/test` endpoint.** Catches the EXPOSE port mismatch we discussed in the Part 3 review. Catches network binding failures (relevant for Part 4 directly). Catches a whole class of "works on my machine" bugs.
+
+- Asked Claude what would be a proper name for this GA 
+- He told about slike test 
+- I found it fun and google, it seem something who match what we are doing
+> a subset of test cases that cover the most important functionality of a component or system. 
+Used to aid assessment of whether main functions of the software appear to work correctly.
+
+- Discussed a bit abou Claude
+- His first version wasnt fine on my opinion as there wasnt retry on curl command, the CI just testd endpoint once after 5 seconds. 
+- I set up retry and delay to a reasonable amount
+- The port in the curl command was fix
+- I proposed to add a appPort properties in gradle.properties to make the port choice dynamic. It parse th properties value from GH secrets
+- It also make me think I should make the Dockerfile dynamic when it come to port choice. So we will use this new propertie
+- We will also use this new propertie in our main at .withListener(new HTTPListenerConfiguration(42000))) so the dynamic choice is consistant and we get ride of hardcoded value
+- Added in build.gradle.kts. I described and asked Syntax to Claude 
+> tasks.named<JavaExec>("run") {
+  environment("APP_PORT", project.findProperty("appPort")?.toString() ?: "42000")
+  }
+- So we can test build only ./gradlew build with dynamic syntax
+- int port = Integer.parseInt(System.getenv().getOrDefault("APP_PORT", "42000"));
+- CHange EXPOSE 42000 to 
+># Documents that the application listens on port $EXPOSED_PORT
+# Does not open the port by itself — requires -p flag at docker run time.
+ARG EXPOSED_PORT=43000
+EXPOSE $EXPOSED_PORT
+- Had a long discussion with Claude about making both ports (inside and outside container) fully dynamic. samely for local java+gradle only test and for full docker usecase 
+
+```yaml
+name: Docker Image CI
+
+# Append on every push on master branch
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      # STEP 1 : Create gradle.properties from GH Secret
+      - name: Create gradle.properties from secret
+        run: echo "${{ secrets.GRADLE_PROPERTIES }}" > gradle.properties
+
+      # STEP 2 : Build image via compose (secrets handled in docker-compose.yml) and smoke test
+      - name: Check /test endpoint to catch eventual port mismatch
+        run: |
+          export EXPOSED_PORT=$(grep "exposedPort" gradle.properties | cut -d'=' -f2)
+          docker compose up -d --build
+          curl --fail --retry 10 --retry-delay 8 --retry-connrefused http://localhost:$EXPOSED_PORT/test
+          docker compose down
+```
+- And our updated compose 
+```yaml
+services:
+  app:
+    build:
+      context: .
+      secrets:
+        - gradle_props
+    image: project1:latest
+    environment:
+      - APP_PORT=${APP_PORT:-42000}
+    ports:
+      - "${EXPOSED_PORT:-43000}:${APP_PORT:-42000}"
+
+secrets:
+  gradle_props:
+    file: ./gradle.properties
+```
+-Lets update our GH secrets and then commit & push to test how it goes
+
+
+
 
 PART 4
 

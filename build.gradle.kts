@@ -20,6 +20,9 @@ application {
     mainClass.set("org.example.Main")
 }
 
+tasks.named<JavaExec>("run") {
+    environment("APP_PORT", project.findProperty("appPort")?.toString() ?: "42000")
+}
 publishing {
     publications {
         create<MavenPublication>("maven") {

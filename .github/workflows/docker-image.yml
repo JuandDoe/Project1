@@ -1,6 +1,6 @@
 name: Docker Image CI
 
-# Appen on every psuh on master branch
+# Append on every push on master branch
 on:
   push:
     branches: [ "master" ]
@@ -12,9 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      # This action checks-out your repository under $GITHUB_WORKSPACE, so your workflow can access it.
-
-
+      # This action checks-out repository under $GITHUB_WORKSPACE, so your workflow can access it.
 
       # STEP 1 : Coherence check (No secret needed)
       #  If a key is missing OR if a value has an invalid format (e.g. empty string for a URI) => fail

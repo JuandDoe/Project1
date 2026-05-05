@@ -5,8 +5,10 @@ services:
       secrets:
         - gradle_props
     image: project1:latest
+    environment:
+      - APP_PORT=${APP_PORT:-42000}
     ports:
-      - "43000:42000"
+      - "${EXPOSED_PORT:-43000}:${APP_PORT:-42000}"
 
 secrets:
   gradle_props:

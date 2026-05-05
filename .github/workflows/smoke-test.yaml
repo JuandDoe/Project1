@@ -1,0 +1,26 @@
+name: Docker Image CI
+
+# Append on every push on master branch
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      # STEP 1 : Create gradle.properties from GH Secret
+      - name: Create gradle.properties from secret
+        run: echo "${{ secrets.GRADLE_PROPERTIES }}" > gradle.properties
+
+      # STEP 2 : Build image via compose (secrets handled in docker-compose.yml) and smoke test
+      - name: Check /test endpoint to catch eventual port mismatch
+        run: |
+          export EXPOSED_PORT=$(grep "exposedPort" gradle.properties | cut -d'=' -f2)
+          docker compose up -d --build
+          curl --fail --retry 10 --retry-delay 8 --retry-connrefused http://localhost:$EXPOSED_PORT/test
+          docker compose down
