@@ -10,7 +10,7 @@ repos:
         -   id: block-todo-comments
             name: Block TODO / FIXME commented-out code
             language: pygrep
-            entry: "(?i)(TODO|FIXME|HACK|XXX|//\s*(test|temp))"
+            entry: "(?i)(TODO|FIXME|HACK|XXX|//\\s*(test|temp))"
           # MATCH : TODO, FIXME, HACK, XXX + //test, //temp, case-insensitive
             files: \.(kt|java|groovy|kts)$
           # MATCH : kt, java, groovy, kts uniquement
