@@ -40,7 +40,7 @@ public class Main {
         };
 
         try (HTTPServer server = new HTTPServer().withHandler(handler)
-                .withListener(new HTTPListenerConfiguration()) {
+                .withListener(new HTTPListenerConfiguration(42000))) {
             server.start();
             logger.info("Server started on port {} ", port);
             latch.await();

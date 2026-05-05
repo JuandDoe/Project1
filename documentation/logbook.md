@@ -1477,7 +1477,7 @@ du -sh /tmp/jre-xml
 
 ------------------------------------------------------------------------------------------------------------------------
 
-Part 4 – Intentional failure mode 
+**PREPARATION** Part 4 – Intentional failure mode 
 
 (important clarification)
 
@@ -1570,6 +1570,138 @@ Rule of thumb:
 
   The mental model worth keeping: USER switches who runs the process. It does not change who owns the files the process touches. Permission failures inside containers are almost always those two layers being out of step.
 
+
+------------------------------------------------------------------------------------------------------------------
+
+PART 3 FOLLOW UPS
+
+- I read the whole review twices as noted int the pre_start_checklist
+- Too excited to start
+- 
+
+- [X ] Write down in your own words: **what is the actual goal of this part?**
+- Small fixes + understanding what are gith hooks, then implementing some to address the listed issues 
+
+- [X ] List every explicit deliverable — nothing implied, only what is written
+
+- **1. Fix two arguments into the gradle.example.properties file to match changes I made in gradle.properties   `repsyUsername` to `repsyRepoUsername` and `repsyPassword` to `repsyRepoPassword`
+- **2. The Dockerfile jlink module comment is stale.** You correctly updated the `--add-modules` line to `java.base,java.logging,java.instrument,java.naming,java.xml,jdk.compiler,jdk.unsupported`. But the comment block above it (lines 70-77) still describes `java.desktop` (AWT/Swing) and `java.sql` (JDBC), which are no longer in the list, and does not describe `java.logging` or `java.xml`, which are. The code is right; the documentation is now wrong about what the code does.
+
+- **3. Set up all the automatic verifications listed as example by reviewer
+- **A CI step that runs the build from a clean clone, using only what is in the repo.** If `gradle.example.properties` keys do not match what `build.gradle.kts` expects, the build fails. CI fails. You see it before anyone reviews.
+- **A CI step that does `docker compose up --build` and hits the `/test` endpoint.** Catches the EXPOSE port mismatch we discussed in the Part 3 review. Catches network binding failures (relevant for Part 4 directly). Catches a whole class of "works on my machine" bugs.
+- **A pre-commit hook that fails if `gradle.properties` is staged.** Would have prevented the original credentials leak before any commit happened.
+- **A simple grep check, in the pre-commit hook or in CI, that flags `TODO`, `// test`, `// TEMP`, or large blocks of commented-out code.** Catches the kind of vestigial-code review your checklist asks you to do by hand.
+
+- You do not need to set it all up at once. One pre-commit hook that catches one specific class of mistake is a real win.
+- LOL :)
+- You give me a list, I implement a list. Deal with that.
+- [X ] Identify any **warnings, rules, or "do NOT"** sections — treat them as hard constraints
+- Nothing special
+- [X ] If something is ambiguous, **ask before starting** — not halfway through
+- - **A CI step that runs the build from a clean clone, using only what is in the repo.** If `gradle.example.properties` keys do not match what `build.gradle.kts` expects, the build fails. CI fails. You see it before anyone reviews.
+- Does it mean literally, cloning the repos is the first part of the CI ?
+- Confirmed by Claude
+
+- **A CI step that runs the build from a clean clone, using only what is in the repo.** If `gradle.example.properties` keys do not match what `build.gradle.kts` expects, the build fails. CI fails. You see it before anyone reviews.
+- Okay, so far my understanding of CI (Continous Integration) Is about how we can automate build of a program, it come along the second side which is CD (continuous deployment)
+- Explained to Claude that concepts was a bit too blurry to implement and asked for some keywoard to begin my searches 
+- He gave me ; CI/CD
+  GitHub Actions
+  Pipeline / Workflow
+- Lets start by the Github Action documentation
+
+- GitHub Actions is a continuous integration and continuous delivery (CI/CD) platform that allows you to automate your build, test, and deployment pipeline. 
+- You can create workflows that run tests whenever you push a change to your repository, or that deploy merged pull requests to production.
+- Now we have a clear definition of CI/CD from documentation
+
+- using only what is in the repo.** If `gradle.example.properties` keys do not match what `build.gradle.kts` expects, the build fails. 
+- Hum but what in our case cause some of keys on gradle have some secrets values for private repo authentification. So, now (apart from you as reviewer) a standard user on gh wouldnt be able to build (Maven  Centrfal act as fallback but my prvate hw dependencie cant be fetched without credential. 
+- Or, I should ad a larger scope credential for the repo (like a public shared credential) ? 
+- I think it wouldnt make sense cause in real life case if you have to provide repo access to everyone it seem as a security hole. and nothing is "private" anymore
+- Claude said it was correct and hint me to goole a bit about Github Secrets. I will keep going read the doc it will probably be one of the chapter of CI/CD
+- Read a bit, saw a basic example, then went to action page on gh 
+- Found a template : Build a Docker image to deploy, run, or push to a registry.
+- Wait ; "A CI step that runs the build from a clean clone" seem a bit ambigous, gradle build, docker image build ? both ?
+- We will consider here that we need to do the more complete task so kets say : fuild build gradle + docker image
+
+- GH give us this templaet to start with
+
+> name: Docker Image CI
+
+on:
+push:
+branches: [ "master" ]
+pull_request:
+branches: [ "master" ]
+
+jobs:
+
+build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Build the Docker image
+      run: docker build . --file Dockerfile --tag my-image-name:$(date +%s)
+
+- It seeem to run docker build . --file Dockerfile --tag my-image-name:$(date +%s) for every push on master branch
+- I said to claude that we need to adapt  : If `gradle.example.properties` keys do not match what `build.gradle.kts` expects, the build fails
+- For building the image we need to provides importants informations (in our case the credentials ) to github secrets 
+- I added the content of my gradle.properties to a newly created secret repository
+
+```yaml
+name: Docker Image CI
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        # This action checks-out your repository under $GITHUB_WORKSPACE, so your workflow can access it.
+
+
+      # STEP 1 : Coherence check (No secret needed)
+      # Basically we copy the example file to the gradle.properties. If name of properties doesnt match => fail
+      # It works even without values, build.gradle.kts only checks the key match, not the value
+      - name: Check gradle.example.properties is valid
+        run: |
+          cp gradle.example.properties gradle.properties
+          ./gradlew help --no-daemon
+
+      # STEP 2 : Docker build (Using GH Secrets)
+      # We put the content of the GH secret GRADLE_PROPERTIES into gradle.properties
+      - name: Create gradle.properties from secret
+        run: echo "${{ secrets.GRADLE_PROPERTIES }}" > gradle.properties
+
+      # Finally we build the image with the secret from the GH secrets repository
+      - name: Build Docker image
+        run: |
+          docker build . \
+            --secret id=gradle_props,src=gradle.properties \
+            --file Dockerfile \
+            --tag my-image-name:$(date +%s)
+```
+- Didn(t understood exactly   uses: actions/checkout@v4
+- Went to the repo, its an import of an action already coded by github. commented in the yaml just above, and noticed v6 was last available, so I updated
+- Note : actions must be under .github/workflows folder
+
+- It same to make sense, lets test
+
+- GH action failed
+> Cannot convert '' to URI.
+Contrairement a ce que soutenait Claude, l
+- Basically we copy the example file to the gradle.properties. If name of properties doesnt match => fail
+  It works even without values, build.gradle.kts only checks the key match, not the value
+- This comment is wrong. Gradle try imediately to convert the value into an uri 
+- Lets put the value in gradle.exemple.properties at "https://example.com", other blank values will be set up at : "example_" + "key"
 
 
 PART 4
