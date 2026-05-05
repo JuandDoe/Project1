@@ -2000,6 +2000,11 @@ Block gradle.properties from being committed.............................Failed
 
 - Let's try for real 
 - Commit Fail. Done
+- Let's remove gradle.properties from staged
+> git restore --staged gradle.properties
+> git status
+- modified build.gradle.kts 
+- Should work. Let's try 
 
 PART 4
 
