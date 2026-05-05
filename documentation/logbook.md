@@ -1834,6 +1834,29 @@ Error: Process completed with exit code 1
 - I puted a space in my port name, leaded to the error
 - Fix & Try again
 
+> 27 resolving provenance for metadata file
+#27 DONE 0.0s
+Network project1_default  Creating
+Network project1_default  Created
+Container project1-app-1  Creating
+Container project1-app-1  Created
+Container project1-app-1  Starting
+Container project1-app-1  Started
+% Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+Dload  Upload   Total   Spent    Left  Speed
+
+0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
+0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
+curl: (56) Recv failure: Connection reset by peer
+Error: Process completed with exit code 56.
+
+- CHecked with Claude
+- --retry-connrefused → retries when port is not open yet.
+  --retry-all-errors → retries on any error, including Connection reset by peer (JVM started but app not ready yet).
+- Lets try again
+- BTW all this flag seem dirty I wonder idf tyhere is more classy way to do. We will see then
+
+
 
 
 
