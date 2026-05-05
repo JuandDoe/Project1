@@ -2027,6 +2027,17 @@ Block gradle.properties from being committed.............................Failed
 
 To 
 > entry: "TODO|todo|FIXME|fixme|HACK|hack|XXX|//\s*[Tt][Ee][Ss][Tt]|//\s*[Tt][Ee][Mm][Pp]"
+- commit passed again. Shit
+- Okay I'm too tired. Even by checking the regular expression it fail. I'm too tired.
+- Tomorrow this must be polished + commited last delay and I must have started Part 4 : Rhythm isnt good :(
+
+- Read a bit searched some already done similar pre commit hook i can just import and use
+- Finally browsed here : https://pre-commit.com/hooks.html
+- pre-commit configurations in popular projects: file:^\.pre-commit-config\.yaml$
+- Ofc I will just check some big SOTA open sourrce java project and find what they have as pre commit hook. I can neither use or fork
+- Hum it seem as big projects (at least looked springboot repo, make most of verifications without pre-commit
+- Lets back to something simple
+
 
 
 

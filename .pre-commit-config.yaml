@@ -4,13 +4,13 @@ repos:
         -   id: block-gradle-properties
             name: Block gradle.properties from being committed
             language: fail
-            entry: "gradle.properties must not be committed — use gradle.example.properties instead"
+            entry: "gradle.properties must not be committed ? use gradle.example.properties instead"
             files: (^|/)gradle\.properties$
+
         -   id: block-todo-comments
             name: Block TODO / FIXME commented-out code
             language: pygrep
-            entry: "TODO|todo|FIXME|fixme|HACK|hack|XXX|//\s*[Tt][Ee][Ss][Tt]|//\s*[Tt][Ee][Mm][Pp]"
-            # MATCH : characters TODO, FIXME, HACK, XXX all  literally and non cases sensitive
-            # Match any kind of invisible character between "//" and "test", same for "//" and "temp"
+            entry: "(?i)(TODO|FIXME|HACK|XXX|//\\s*(test|temp))"
+          # MATCH : TODO, FIXME, HACK, XXX + //test, //temp, case-insensitive
             files: \.(kt|java|groovy|kts)$
-            # MATCH : characters kt, java, groovy, kts, all  literally and cases sensitive
+          # MATCH : kt, java, groovy, kts uniquement
