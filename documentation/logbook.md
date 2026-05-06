@@ -1602,6 +1602,11 @@ PART 3 FOLLOW UPS
 - - **A CI step that runs the build from a clean clone, using only what is in the repo.** If `gradle.example.properties` keys do not match what `build.gradle.kts` expects, the build fails. CI fails. You see it before anyone reviews.
 - Does it mean literally, cloning the repos is the first part of the CI ?
 - Confirmed by Claude
+- Answer From reviewer :
+> Conceptually correct
+But it’s not literally git clone as a step you write. Every CI provider (GitHub Actions, GitLab CI, etc.) does the checkout for you as the first thing (usually a build in action)
+the runner is a clean VM/container that only has what the repo provides + what the CI config installs
+So if sth works in your computer but not CI it will be probably because of a file/env var/tool the repo doesn’t declare (here eg your local gradle.properties)
 
 - **A CI step that runs the build from a clean clone, using only what is in the repo.** If `gradle.example.properties` keys do not match what `build.gradle.kts` expects, the build fails. CI fails. You see it before anyone reviews.
 - Okay, so far my understanding of CI (Continuous Integration) Is about how we can automate build of a program, it comes along the second side which is CD (continuous deployment)
@@ -1616,7 +1621,7 @@ PART 3 FOLLOW UPS
 - Now we have a clear definition of CI/CD from documentation
 
 - using only what is in the repo.** If `gradle.example.properties` keys do not match what `build.gradle.kts` expects, the build fails. 
-- Hum but what in our case cause some of the keys on Gradle have some secrets values for private repo authentification. So, now (apart from you as reviewer) a standard user on gh wouldnt be able to build (Maven  Centrfal act as fallback but my prvate hw dependencie cant be fetched without credential. 
+- Hum but what in our case cause some of the keys on Gradle have some secrets values for private repo authentification. So, now (apart from you as reviewer) a standard user on gh wouldn't be able to build (Maven  Central act as fallback but my private hw dependencies cant be fetched without credential. 
 - Or, I should add a larger scope credential for the repo (like a public shared credential) ? 
 - I think it wouldn't make sense cause in real life case if you have to provide repo access to everyone it seems as a security hole. and nothing is "private" anymore
 - Claude said it was correct and hint me to google a bit about GitHub Secrets. I will keep going read the doc it will probably be one of the chapter of CI/CD
@@ -1648,7 +1653,7 @@ build:
 
 - It seems to run docker build . --file Dockerfile --tag my-image-name:$(date +%s) for every push on master branch
 - I said to claude that we need to adapt  : If `gradle.example.properties` keys do not match what `build.gradle.kts` expects, the build fails
-- For building the image we need to provide importants information (in our case the credentials ) to GitHub secrets 
+- For building the image we need to provide important information (in our case the credentials ) to GitHub secrets 
 - I added the content of my gradle.properties to a newly created secret repository
 
 ```yaml
@@ -1689,24 +1694,24 @@ jobs:
             --file Dockerfile \
             --tag my-image-name:$(date +%s)
 ```
-- Didn(t understood exactly   uses: actions/checkout@v4
-- Went to the repo, its an import of an action already coded by github. commented in the yaml just above, and noticed v6 was last available, so I updated
-- Note : actions must be under .github/workflows folder
+- Didn’t understand exactly   uses: actions/checkout@v4
+- Went to the repo, it's an import of an action already coded by GitHub. commented in the YAML just above, and noticed v6 was last available, so I updated
+- Note : actions must be under .GitHub/workflows folder
 
 - It same to make sense, lets test
 
 - GH action failed
 > Cannot convert '' to URI.
-Contrairement a ce que soutenait Claude, l
-- Basically we copy the example file to the gradle.properties. If name of properties doesnt match => fail
+- Claude was wrong
+- Basically we copy the example file to the gradle.properties. If name of properties doesn't match => fail
   It works even without values, build.gradle.kts only checks the key match, not the value
-- This comment is wrong. Gradle try imediately to convert the value into an uri 
+- This comment is wrong. Gradle try immediately to convert the value into an uri 
 - Right comment would be :
 #  If a key is missing OR if a value has an invalid format (e.g. empty string for a URI) => fail
 - Lets put the value in gradle.exemple.properties at "https://example.com", other blank values will be set up at : "example_" + "key"
 
 - CI worked 
-We will now making CI fail in purpose to check if it really works as expected
+We will now make CI fail in purpose to check if it really works as expected
 
 1) commenting a key in gradle.example.properties
 - #repsyRepoUsername=example_repsyRepoUsername
@@ -1722,7 +1727,7 @@ We will now making CI fail in purpose to check if it really works as expected
 BUILD FAILED in 32s
 Error: Process completed with exit code 1.
 
-2) Modifing a value of gh secrets to make step 2 fail
+2) Modifying a value of gh secrets to make step 2 fail
 - Erasing some value in GH secrets repository
 - Push
 >  > [build 5/7] RUN --mount=type=secret,id=gradle_props,target=/usr/app/gradle.properties     --mount=type=cache,target=/root/.gradle     gradle dependencies --no-daemon:
@@ -1748,7 +1753,7 @@ Dockerfile:35
 ERROR: failed to build: failed to solve: process "/bin/sh -c gradle dependencies --no-daemon" did not complete successfully: exit code: 1
 Error: Process completed with exit code 1.
 - Failed as expected
-- Let's fix back the GH secrets repository wityh all proper values
+- Let's fix back the GH secrets repository with all proper values
 - Worked 
 
 - **A CI step that does `docker compose up --build` and hits the `/test` endpoint.** Catches the EXPOSE port mismatch we discussed in the Part 3 review. Catches network binding failures (relevant for Part 4 directly). Catches a whole class of "works on my machine" bugs.

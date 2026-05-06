@@ -69,10 +69,10 @@ RUN apk add --no-cache binutils
 # as determined by running jdeps on the fat JAR.
 # --add-modules: explicitly lists the required Java modules identified by jdeps.
 #   java.base        — core Java classes, always required
-#   java.desktop     — AWT/Swing and related classes
 #   java.instrument  — Java instrumentation API
 #   java.naming      — JNDI naming and directory services
-#   java.sql         — JDBC database access
+#   java.xml         — Java xml
+#   java.logging     —  Java log
 #   jdk.compiler     — Java compiler API
 #   jdk.unsupported  — sun.misc.Unsafe and other unofficial APIs used by many libraries
 # --strip-debug: removes debug symbols from the JRE, reducing its size.
