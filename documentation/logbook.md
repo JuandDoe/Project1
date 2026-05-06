@@ -2034,13 +2034,13 @@ To
 > entry: "TODO|todo|FIXME|fixme|HACK|hack|XXX|//\s*[Tt][Ee][Ss][Tt]|//\s*[Tt][Ee][Mm][Pp]"
 - commit passed again. Shit
 - Okay I'm too tired. Even by checking the regular expression it fail. I'm too tired.
-- Tomorrow this must be polished + commited last delay and I must have started Part 4 : Rhythm isnt good :(
+- Tomorrow this must be polished + commited last delay and I must have started Part 4 : Rhythm isn't good :(
 
 - Read a bit searched some already done similar pre commit hook i can just import and use
 - Finally browsed here : https://pre-commit.com/hooks.html
 - pre-commit configurations in popular projects: file:^\.pre-commit-config\.yaml$
-- Ofc I will just check some big SOTA open sourrce java project and find what they have as pre commit hook. I can neither use or fork
-- Hum it seem as big projects (at least looked springboot repo, make most of verifications without pre-commit
+- Ofc I will just check some big SOTA open source java project and find what they have as pre commit hook. I can neither use nor fork
+- Hum it seem as big projects (at least looked springboot repo, make most of the verifications without pre-commit
 - Lets back to something simple
 - Tried another syntax with Claude
 - Same issue
@@ -2122,18 +2122,29 @@ pre-commit 3.6.2
 - Would be a cool think to do as a bash side  project
 
 - Some YAML syntax error (the way I deal with comments for example ) seems silenced inside IDE and only show up when GA are run
+- The issue is that YAML comments (#) break the run: | block. In YAML, a literal block | ends as soon as a line returns to an indentation level equal or lower than the block's — which is exactly what my comments did
+- I moved the shell comments (#) inside the run block, at the same indentation level as the commands
+
+- I raised a question to reviewer about the proper algorithm to learn something new 
+
+1) New thing for you: Official > examples in repo (if present) > ver changelog > closed GitHub issues > source/tests > human social content
+
+2) Debugging: error msg > closed issues > human content > source
+
+- I felt as a click to have a standardized pattern. Those meta-advice seems to make the difference. No specific stuff, more transversal building habits
+
 
 PART 4
 
 - We are going to start this part by implementing the first issue
 
 - App binds to 127.0.0.1 inside Docker and is unreachable from the host.
-- following the reviewer anser about Q1 we should switch new HTTPListenerConfiguration wich take a int as argument
+- following the reviewer answer about Q1 we should switch new HTTPListenerConfiguration which take a int as argument
 - I wasn't very sure about what is a constructor variant, I asked Claude how it was different from using one another methode of the library
 - Claude showed me an example saying HTTPListenerConfiguration has not only one constructor 
 > HTTPListenerConfiguration
 > new HTTPListenerConfiguration("127.0.0.1", port)
-- I wondered how to find the list of thoses differents availables constructors, I erased the actual argument in my code
+- I wondered how to find the list of theses différents available constructors, I erased the actual argument in my code
 - IDE hilghlithed in red and i move my mouse on it
 - A pop up appaeard : Cannot resolve constructor 'HTTPListenerConfiguration()'
 - The popu up showed all of the availables constructor 
