@@ -1760,31 +1760,31 @@ Error: Process completed with exit code 1.
 
 - Asked Claude what would be a proper name for this GA 
 - He told about smoke test 
-- I found it fun and googled, it seem something who match what we are doing
+- I found it fun and googled, it seems something who match what we are doing
 > a subset of test cases that cover the most important functionality of a component or system. 
 Used to aid assessment of whether main functions of the software appear to work correctly.
 
-- Discussed a bit abou Claude
-- His first version wasnt fine on my opinion as there wasnt retry on curl command, the CI just testd endpoint once after 5 seconds. 
-- I set up retry and delay to a reasonable amount
-  - The port in the curl command was hardcoded
-- I proposed to add a appPort properties in gradle.properties to make the port choice dynamic. It parse the properties value from GH secrets
-- It also make me think I should make the Dockerfile dynamic when it come to port choice. So we will use this new propertie
-- We will also use this new propertie in our main at .withListener(new HTTPListenerConfiguration(42000))) so the dynamic choice is consistant and we get ride of hardcoded value
-- Added in build.gradle.kts. I described the need of an environement variable and asked Syntax to Claude 
+- Discussed a bit with Claude
+- His first version wasn't fine on my opinion as there wasn't retry on curl command, the CI just test endpoint once after 5 seconds. 
+- I set up retry and delay to a reasonable amount so docker container can setup properly
+- The port in the curl command was hardcoded
+- I proposed to add a appPort properties in gradle.properties to make the port choice dynamic. It parses the properties value passed just before by GH secrets
+- It also makes me think I should make the Dockerfile dynamic when it comes to port choice. So we will use this new properties
+- We will also use this new propertie in our main at .withListener(new HTTPListenerConfiguration(42000)) so the dynamic choice is consistant, and we get rid of hardcoded value
+- Added in build.gradle.kts. I described the need of an environment variable and asked Syntax to Claude 
 > tasks.named<JavaExec>("run") {
   environment("APP_PORT", project.findProperty("appPort")?.toString() ?: "42000")
   }
 - So we will be able to test build only ./gradlew run with dynamic syntax
-- int port = Integer.parseInt(System.getenv().getOrDefault("APP_PORT", "42000"));
-- Allow us to make port listened by server dynamic
+- Inside my main I know define dynamically the port where java HTTP server run 
+>int port = Integer.parseInt(System.getenv().getOrDefault("APP_PORT", "42000"));
 - Change EXPOSE 42000 to 
 ># Documents that the application listens on port $EXPOSED_PORT
 # Does not open the port by itself — requires -p flag at docker run time.
 ARG EXPOSED_PORT=43000
 EXPOSE $EXPOSED_PORT
 - Cosmetic
-- Had a long discussion with Claude about making both ports (inside and outside container) fully dynamic. samely for local java+gradle only test and for full docker use case 
+- Had a long discussion with Claude about making both ports (inside and outside container) fully dynamic. gamely for local java+gradle only test and for full docker use case 
 
 ```yaml
 name: Docker Image CI
@@ -1832,13 +1832,13 @@ secrets:
   gradle_props:
     file: ./gradle.properties
 ```
-- Lets update our GH secrets and then commit & push to test how it goes
+- Let's update our GH secrets and then commit & push to test how it goes
 - Failed
 > 1s
 Run export EXPOSED_PORT=$(grep "exposedPort" gradle.properties | cut -d'=' -f2)
 invalid hostPort:  43000
 Error: Process completed with exit code 1
-- I puted a space in my port name, leaded to the error
+- I put a space in my port name, leaded to the error
 - Fix & Try again
 
 > 27 resolving provenance for metadata file
@@ -1854,13 +1854,13 @@ Dload  Upload   Total   Spent    Left  Speed
 
 0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
 0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
-curl: (56) Recv failure: Connection reset by peer
+curl: (56) Rev failure: Connection reset by peer
 Error: Process completed with exit code 56.
 
-- CHecked with Claude
+- Checked with Claude
 - --retry-connrefused → retries when port is not open yet.
   --retry-all-errors → retries on any error, including Connection reset by peer (JVM started but app not ready yet).
-- Lets try again
+- Let's try again
 - BTW all this flag seem dirty I wonder if there is more classy way to do. We will see then
 
 - Worked 
@@ -1872,7 +1872,7 @@ Network project1_default  Removing
 Network project1_default  Removed
 Successful HTTP request
 
-- Lets eat, and then we will edit the action with ton of comment. I used Claude quite a lot but litle step after litle step and I feel as I understood everything who append clearly by discussing actively with him
+- Let's eat, and then we will edit the action with ton of comment. I used Claude quite a lot but little step after little step and I feel as I understood everything who append clearly by discussing actively with him
 
 ```yaml
 name: Smoke Test CI
@@ -1930,15 +1930,15 @@ app-1  | 13:24:52.659 [main] INFO org.example.Main -- Server started on port 460
   > 1777987998881 HTTP server listening on port [48000]
   1777987998881 HTTP server started successfully
   15:33:18.881 [main] INFO org.example.Main -- Server started on port 48000
-- Both direct gradlew build and Docker Compose port configuration work. Nothing hardcoded anymore. Resilient as there is fallback values set up
+- Both direct gradlew build and Docker Compose port configuration work. Nothing hardcoded anymore. Resilient since there is fallback values set up
 
 - Just realized how It's difficult to keep focus while doing phone customer support on the meantime
 - Anyway, it's fine. Let's commit & push we are half of the way
 
 - **A pre-commit hook that fails if `gradle.properties` is staged.** Would have prevented the original credentials leak before any commit happened.
 
-- Git Hook are different than github actions, they arent linked to github
-- - A bit more directly from the documentation of git :
+- Git Hook are different from GitHub actions, they aren't linked to GitHub
+- - A bit more, directly from the documentation of git :
 
 The pre-commit hook is run first, before you even type in a commit message. It’s used to inspect the snapshot that’s about to be committed
 To see if you’ve forgotten something, to make sure tests run, or to examine whatever you need to inspect in the code. 
@@ -1973,8 +1973,8 @@ repos:
         exclude_types: ^gradle\.properties$
 ```
 > sudo apt install pre-commit
-- This command creates the .git/hooks/pre-commit file, which will be executed automatically on every git commit. 
-- Without it, the .pre-commit-config.yaml file exists but does nothing.
+- This command creates the .git/hooks/pre-commit file, which will be executed automatically on every git commit
+- Without it, the .pre-commit-config.yaml file exists but does nothing
 > pre-commit run --all-files
 An error has occurred: InvalidConfigError:
 ==> File .pre-commit-config.yaml
@@ -2022,7 +2022,7 @@ Block gradle.properties from being committed.............................Failed
 - Claude said something funny : My advice: leave it to code review rather than over-engineering the hook.
 - Well okay I will be a pussy here. I know I should learn basic shell scrip for these kind of tasks seem a mountain tbh
 - I mean probably after gew hours I will understand what the snippet does but tomorrow I will forget
-- I should maybe take a whole day just paper and GNU doc but I will forget the day after.. as always :(
+- I should maybe take a whole day just paper and GNU doc, but I will forget the day after. as always :(
 - Let's shut up and focus on project for now 
 
 - Added `//TEMP` inside Main.java to test the pre-commit hook
@@ -2068,7 +2068,7 @@ An error has occurred: InvalidConfigError:
 Check the log at /home/ant/.cache/pre-commit/pre-commit.log
 - Well..at least now comit anymore
 > pre-commit install --overwrite
-- Worked. I spent so much hours. Stupid slow brain & memory :(
+- Worked. I spent so many hours. Stupid slow brain & memory :(
 - Fuck.. I did shit the other day installing and then moved on 
 - The .git/hooks/pre-commit file was owned by git-secrets. Running pre-commit install --overwrite replaced it with the pre-commit framework runner
 - Which now executes all hooks defined in .pre-commit-config.yaml on every commit.
@@ -2095,6 +2095,31 @@ pre-commit install --overwrite
 - At least I'm a bit proud of the fact all CI and git hook asked works
 - Will read the whole logbook part again, correct typos, read again about the concepts once again. everything seem clear now but better come back on it
 
+- As expect on work machine
+> pre-commit --version
+pre-commit 3.6.2
+- Updated to pre-commit 4.2.0 
+
+- Morning though on this :
+> Well okay I will be a pussy here. I know I should learn basic shell scrip for these kind of tasks seem a mountain tbh
+- Whith a fresh brain, learning along the way some expression, pattern, syntax, it looks a bit less as 1000% ununderstandable traditional Chinese
+
+- Looking back at what I did; it doesn't seem as dark/catastrophic as what I thought yesterday
+- 
+- We have one iteration again of this fucking : What you think is running and what Run for real
+- Command you type on a terminal days before can have a very bad silent impact
+
+- It made me think in the morning about an idea 
+- Since we learnt in follow-ups part 3 that good engineers are good cause they can focus on the thing who matter
+- For example my overcomment of pre-commit hook and GA actions give me a deep feeling of roundness. I read them as natural language
+- They can focus on what matter cause they have good tools
+- If we do same mistake again, and again we need a tool
+- The idea would be a bash script who check version of a given set of tools locally (gradle wraper, javac, JVM version, git pre-commit version and currently active hook)
+- The script match them against a requirement.txt inside the repo and output in a requirement_check. txt file if anything is missing
+- So when we debug and the problem seem non-trivial we run this script, let say ./realrun and have a simple agregator to investigate and no blind spots
+- Will not be perfevt but will allow project tailored checklist AND to never do same mistake twice
+
+- Would be a cool think to do as a bash side  project
 
 PART 4
 

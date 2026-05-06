@@ -10,6 +10,9 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    # Its NO a docker image. A runner is a complet VM. The VM from github run on Microsoft Azure cloud Ubuntu 24.04
+    # Ubuntu 24.04	ubuntu-latest or ubuntu-24.04
+    # https://github.com/actions/runner-images
     steps:
       - uses: actions/checkout@v6
         # This action checks-out repository under $GITHUB_WORKSPACE, so workflow can access it.
@@ -20,11 +23,14 @@ jobs:
         run: |
           cp gradle.example.properties gradle.properties
           ./gradlew help --no-daemon
+        # | denote literal style, it allows to keep "\n" character so multiline command run can be performed in YAML
 
       # STEP 2 : Docker build (Using GH Secrets)
       # Put the content of the GH secret GRADLE_PROPERTIES into gradle.properties
       - name: Create gradle.properties from secret
         run: echo "${{ secrets.GRADLE_PROPERTIES }}" > gradle.properties
+        # What's inside ${{ }} is not plain text, it tells GA to evaluate it before passing the command to the shell
+        # Enclosing characters in double-quotes ( "" ) shall preserve the literal value of all characters within the double-quotes, with the exception of the characters backquote, <dollar-sign>, and <backslash>
 
       # Finally, build the image with the secret from the GH secrets repository
       - name: Build Docker image
@@ -33,4 +39,7 @@ jobs:
             --secret id=gradle_props,src=gradle.properties \
             --file Dockerfile \
             --tag my-image-name:$(date +%s)
-
+      # A <backslash> that is not quoted shall preserve the literal value of the following character, with the exception of a <newline>. If a <newline> follows the <backslash>, the shell shall interpret this as line continuation. The <backslash> and <newline> shall be removed before splitting the input into tokens. Since the escaped <newline> is removed entirely from the input and is not replaced by any white space, it cannot serve as a token separator.
+      # $(date +%s)
+      # Command substitution allows the output of a command to be substituted in place of the command name itself
+      # %s = seconds since the Epoch (1970-01-01 00:00 UTC)

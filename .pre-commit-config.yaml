@@ -1,15 +1,21 @@
 repos:
   -   repo: local
+      # Source list for hook. here they come from local repo, no dowloaded from GH
       hooks:
         -   id: block-gradle-properties
+            # Allow CLI usage of a given hook
             name: Block gradle.properties from being committed
+            # Label displayed in the terminal when hook runs
             language: fail
+           # always fails if a file matches, displays entry as the error message
             entry: "gradle.properties must not be committed - use gradle.example.properties instead"
             files: (^|/)gradle\.properties$
+            # MATCH  any file named exactly gradle.properties
         -   id: block-todo-comments
             name: Block TODO / FIXME commented-out code
             language: pygrep
+            # uses Python re (regular expression python built in module)  to search for the entry pattern inside files
             entry: "(?i)(TODO|FIXME|HACK|XXX|//\\s*(test|temp))"
-          # MATCH : TODO, FIXME, HACK, XXX + //test, //temp, case-insensitive
+          # MATCH : TODO, FIXME, HACK, XXX + //test, //temp, not case sensitive
             files: \.(kt|java|groovy|kts)$
-          # MATCH : kt, java, groovy, kts uniquement
+          # MATCH : files with these extensions only
