@@ -2154,15 +2154,16 @@ PART 4
 - We are going to start this part by implementing the first issue
 
 - App binds to 127.0.0.1 inside Docker and is unreachable from the host.
+
 - following the reviewer answer about Q1 we should switch new HTTPListenerConfiguration which take a int as argument
 - I wasn't very sure about what is a constructor variant, I asked Claude how it was different from using one another methode of the library
 - Claude showed me an example saying HTTPListenerConfiguration has not only one constructor 
 > HTTPListenerConfiguration
 > new HTTPListenerConfiguration("127.0.0.1", port)
 - I wondered how to find the list of theses différents available constructors, I erased the actual argument in my code
-- IDE hilghlithed in red and i move my mouse on it
-- A pop up appaeard : Cannot resolve constructor 'HTTPListenerConfiguration()'
-- The popu up showed all of the availables constructor 
+- IDE highlighted in red and I moved my mouse on it
+- A pop-up appear : Cannot resolve constructor 'HTTPListenerConfiguration()'
+- The pop-up showed all the available constructor 
 >Candidates for new HTTPListenerConfiguration() are:
   HTTPListenerConfiguration(int port)
   HTTPListenerConfiguration(int port, String certificate, String privateKey)
@@ -2172,3 +2173,23 @@ PART 4
   HTTPListenerConfiguration(InetAddress bindAddress, int port, String certificate, String privateKey)
   HTTPListenerConfiguration(InetAddress bindAddress, int port, Certificate certificate, PrivateKey privateKey)
 
+>   HTTPListenerConfiguration(InetAddress bindAddress, int port)
+- It smells good, It's what we are looking for
+> InetAddress inetAddress = InetAddress.getByName("127.0.0.1");
+- http://localhost:43000/ : unreachable with curl
+
+- Fix
+> InetAddress inetAddress = InetAddress.getByName("0.0.0.0");
+- Request successful with curl
+
+  • Container runs as non-root but a required directory is owned by root.
+
+Q2. Broader than COPY. Everything created in the Dockerfile before the USER directive is owned by root: WORKDIR, COPY destinations, files from RUN commands, all of it. When the process switches to    
+appuser, it inherits no ownership of any of that. It can usually read root-owned files (default permissions are world-readable). It cannot write to root-owned directories
+
+- Starting from there I guess we will have to create a file "crashroot.txt" with root only permission
+- Then we will switch to our apps and ask him to write "fail" into the crashroot.txt file to make the build fail 
+- Let's google it. Maybe there is other trick
+- Offcial documentation : https://docs.docker.com/build/building/best-practices/
+> Avoid installing or using sudo as it has unpredictable TTY and signal-forwarding behavior that can cause problems. 
+> If you absolutely need functionality similar to sudo, such as initializing the daemon as root but running it as non-root, consider using “gosu”.

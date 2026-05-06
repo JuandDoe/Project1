@@ -11,8 +11,9 @@ services:
       - EXPOSED_PORT=${EXPOSED_PORT:-43000}
     ports:
       - "${EXPOSED_PORT:-43000}:${APP_PORT:-42000}"
-      # -VALUE us a bash variable substitution: if the variable is not set (or empty), the default value is used.
+      # -VALUE is a bash variable substitution: if the variable is not set (or empty), the default value is used
 
+# Secret declaration : it's a file located on host
 secrets:
   gradle_props:
     file: ./gradle.properties

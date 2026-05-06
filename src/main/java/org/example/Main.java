@@ -7,18 +7,21 @@ import io.fusionauth.http.server.HTTPHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.concurrent.CountDownLatch;
 
 public class Main {
     final static Logger logger = LoggerFactory.getLogger(Main.class);
 
-    static void main() throws InterruptedException {
+    static void main() throws InterruptedException, UnknownHostException {
 
         final CountDownLatch latch = new CountDownLatch(1);
         // logout or shutdown event
         Runtime.getRuntime().addShutdownHook(new Thread(() -> latch.countDown()));
 
         int port = Integer.parseInt(System.getenv().getOrDefault("APP_PORT", "42000"));
+        InetAddress inetAddress = InetAddress.getByName("0.0.0.0");
 
         logger.info("Fuck off procrastination!");
         HTTPHandler handler = (req, res) -> {
@@ -38,8 +41,10 @@ public class Main {
             }
 
         };
+
+
         try (HTTPServer server = new HTTPServer().withHandler(handler)
-                .withListener(new HTTPListenerConfiguration(port))) {
+                .withListener(new HTTPListenerConfiguration(inetAddress, port))) {
             server.start();
             logger.info("Server started on port {} ", port);
             latch.await();
