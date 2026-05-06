@@ -2133,6 +2133,21 @@ pre-commit 3.6.2
 
 - I felt as a click to have a standardized pattern. Those meta-advice seems to make the difference. No specific stuff, more transversal building habits
 
+- WTH is this sometime my CI fail sometime  with no change between two tries
+
+>Plugin [id: 'com.gradleup.shadow', version: '9.4.1'] was not found in any of the following sources:
+ Gradle Core Plugins (plugin is not in 'org.gradle' namespace)
+ Included Builds (No included builds contain this plugin)
+ Plugin Repositories (could not resolve plugin artifact 'com.gradleup.shadow:com.gradleup.shadow.gradle.plugin:9.4.1')
+  Searched in the following repositories:
+  Gradle Central Plugin Repository
+
+- Is it a GH infra problem ?!
+
+BUILD FAILED in 36s
+Error: Process completed with exit code 1.
+)
+- Failed twice. Worked one 
 
 PART 4
 
