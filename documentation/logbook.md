@@ -2114,12 +2114,14 @@ pre-commit 3.6.2
 - For example my overcomment of pre-commit hook and GA actions give me a deep feeling of roundness. I read them as natural language
 - They can focus on what matter cause they have good tools
 - If we do same mistake again, and again we need a tool
-- The idea would be a bash script who check version of a given set of tools locally (gradle wraper, javac, JVM version, git pre-commit version and currently active hook)
+- The idea would be a bash script who check version of a given set of tools locally (gradle wrapper, javac, JVM version, git pre-commit version and currently active hook)
 - The script match them against a requirement.txt inside the repo and output in a requirement_check. txt file if anything is missing
-- So when we debug and the problem seem non-trivial we run this script, let say ./realrun and have a simple agregator to investigate and no blind spots
-- Will not be perfevt but will allow project tailored checklist AND to never do same mistake twice
+- So when we debug and the problem seem non-trivial we run this script, let say ./realrun and have a simple aggregator to investigate and no blind spots
+- Will not be perfect but will allow project tailored checklist AND to never do same mistake twice
 
 - Would be a cool think to do as a bash side  project
+
+- Some YAML syntax error (the way I deal with comments for example ) seems silenced inside IDE and only show up when GA are run
 
 PART 4
 

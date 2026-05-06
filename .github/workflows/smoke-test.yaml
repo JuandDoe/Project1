@@ -11,10 +11,10 @@ jobs:
   build:
     runs-on: ubuntu-latest
     # Its NO a docker image. A runner is a complet VM. The VM from github run on Microsoft Azure cloud Ubuntu 24.04
-    # Ubuntu 24.04	ubuntu-latest or ubuntu-24.04
+    # Ubuntu 24.04  ubuntu-latest or ubuntu-24.04
     # https://github.com/actions/runner-images
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
         # This action checks-out repository under $GITHUB_WORKSPACE, so workflow can access it.
 
       # STEP 1 : Create gradle.properties from GH Secret
@@ -26,19 +26,18 @@ jobs:
       # STEP 2 : Build image via compose (secrets handled in docker-compose.yml) and smoke test
       - name: Check /test endpoint to catch eventual port mismatch
         run: |
+          # "export" a value change it scope and make the value available for child process
+          # $(...) substitution, the output of the expression replace the expression
+          # grep "exposedPort" gradle.properties | cut -d'=' -f2
+          # Search the line containing "exposedPort" in gradle.properties
+          # Pipe the line found then cut the line in fields on delimiter "=" and extract the 2nd field
+          # filed count created by cut command start at one
+          # The first is two positive numbers separated by a <hyphen-minus> (low- high), which represents all fields from the first number to the second number.
+          # The second is a positive number preceded by a <hyphen-minus> (- high), which represents all fields from field number 1 to that number.
+          # The third is a positive number followed by a <hyphen-minus> ( low-), which represents that number to the last field, inclusive.
           export EXPOSED_PORT=$(grep "exposedPort" gradle.properties | cut -d'=' -f2)
-        # "export" a value change it scope and make the value available for child process
-        # $(...) substitution, the output of the expression replace the expression
-        # grep "exposedPort" gradle.properties | cut -d'=' -f2
-        # Search the line containing "exposedPort" in  gradle.properties
-        # Pipe the line found the cut the line in fields on delimiter "=" and extract the 2nd field
-
-        # fileds count created by cut command start at one
-        # The first is two positive numbers separated by a <hyphen-minus> (low- high), which represents all fields from the first number to the second number.
-        # The second is a positive number preceded by a <hyphen-minus> (- high), which represents all fields from field number 1 to that number.
-        # The third is a positive number followed by a <hyphen-minus> ( low-), which represents that number to the last field, inclusive. The elements in list can be repeated, can overlap, and can be specified in any order, but the bytes, characters, or fields selected shall be written in the order of the input data
           docker compose up -d --build
           curl --retry 10 --retry-delay 8 --retry-all-errors http://localhost:$EXPOSED_PORT/test
           docker compose down
-        # A <backslash> that is not quoted shall preserve the literal value of the following character, with the exception of a <newline>. If a <newline> follows the <backslash>, the shell shall interpret this as line continuation. The <backslash> and <newline> shall be removed before splitting the input into tokens. Since the escaped <newline> is removed entirely from the input and is not replaced by any white space, it cannot serve as a token separator.
-        # "export" a value change it scope and make the value available for child process
+          # A <backslash> that is not quoted shall preserve the literal value of the following character, with the exception of a <newline>. If a <newline> follows the <backslash>, the shell shall interpret this as line continuation.
+          # "export" a value change it scope and make the value available for child process
