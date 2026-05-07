@@ -1979,7 +1979,8 @@ repos:
 An error has occurred: InvalidConfigError:
 ==> File .pre-commit-config.yaml
 ==> At Config()
-==> At key: repos
+==> At key: repos• If the fix is in Docker config, environment variables, permissions, memory limits, or networking, you’re doing it right.
+
 ==> At Repository(repo='local')
 ==> At key: hooks
 ==> At Hook(id='block-gradle-properties')
@@ -2181,6 +2182,7 @@ PART 4
 - Fix
 > InetAddress inetAddress = InetAddress.getByName("0.0.0.0");
 - Request successful with curl
+- Problem involved network interface it was a network problem. The application inside docker need to listen in the right interface to catch the network traffic going to the container and route it to the program.
 
   • Container runs as non-root but a required directory is owned by root.
 
@@ -2235,3 +2237,57 @@ RUN echo "foo" > $APP_HOME/src/avoid_crashroot/crashroot.txt
 ✔ Image project1:latest Built                                                                                                                                                                       2.8s
 ✔ Network 1task_default Created                                                                                                                                                                     0.0s
 ✔ Container 1task-app-1 Created   
+- It was  a permission issue as non root user didnt ad the right to write on a root owned directory. Copying the directory and giving non root write permission on it is a comon turn around
+
+• Gradle fails to resolve dependencies due to missing/wrong repo credentials.
+
+- Let's use again one of the properties we created  earlier in the exercice
+- switch   password = property("repsyRepoPassword") as String TO password = property("repsyPassword_WRONG") as String
+
+> Caused by: org.gradle.api.resources.ResourceException: Could not get resource 'https://repo.repsy.io/mvn/user92137778/project1/org/example/hw_dependencie/1.0.0/hw_dependencie-1.0.0.jar'.
+at org.gradle.internal.resource.ResourceExceptions.failure(ResourceExceptions.java:74)
+at org.gradle.internal.resource.ResourceExceptions.getFailed(ResourceExceptions.java:57)
+at org.gradle.api.internal.artifacts.repositories.resolver.DefaultExternalResourceArtifactResolver.downloadByUrl(DefaultExternalResourceArtifactResolver.java:114)
+at org.gradle.api.internal.artifacts.repositories.resolver.DefaultExternalResourceArtifactResolver.downloadStaticResource(DefaultExternalResourceArtifactResolver.java:92)
+at org.gradle.api.internal.artifacts.repositories.resolver.DefaultExternalResourceArtifactResolver.resolveArtifact(DefaultExternalResourceArtifactResolver.java:62)
+at org.gradle.api.internal.artifacts.repositories.resolver.ExternalResourceResolver$RemoteRepositoryAccess.resolveArtifact(ExternalResourceResolver.java:487)
+... 39 more
+Caused by: org.gradle.internal.resource.transport.http.HttpErrorStatusCodeException: Could not GET 'https://repo.repsy.io/mvn/user92137778/project1/org/example/hw_dependencie/1.0.0/hw_dependencie-1.0.0.jar'. Received status code 401 from server:
+
+- The wrong credential password for the repsy repository lead to a build fail cause a needed dependencie cant be fetch and is needed at build time
+- Switch the variable value to default fix the problem
+- Its misconfiguration who lead to a permission problem cause we dont have the right to access and fetch from the repo when password is wrong
+
+- Container uses too much memory and becomes slow or unstable.
+- We will have to find a way to limitate drasticaly the computer ram usage
+  https://docs.docker.com/engine/containers/resource_constraints/
+- The maximum amount of memory the container can use. If you set this option, the minimum allowed value is 6m (6 megabytes). 
+- That is, you must set the value to at least 6 megabytes.
+- This way we will easily achieve a situation where we mimic docker container using too much memory/took all mmeory available for him
+- -m or --memory=
+
+- Constraint can be also be set up into compose
+- https://docs.docker.com/reference/compose-file/deploy/#resources
+- added
+>     deploy:
+     resources:
+      limits:
+       memory: 6m
+- Content cant be reached when curl request 
+> curl localhost:43000/test
+curl: (56) Recv failure: Connection reset by peer
+- end up with an error and finally exit 
+> app-1 exited with code 137
+- remove the constraint from compose
+> curl localhost:43000/test
+Successful HTTP request
+- I give error 137 to Claude to get official docker documentation page
+- Its likely OOMKILLED error as with 6 mo of ram as maximum allowed usage,  container ran out of memory
+- Claude give command to check 
+> docker inspect <container_id | grep OOMKilled
+> docker ps -a 
+> dbfcbf5e2be0   project1:latest   "java -jar app.jar"   30 seconds ago   Exited (137) 30 seconds ago             1task-app-1
+> docker inspect dbfcbf5e2be0 | grep OOMKilled
+# → "OOMKilled": true
+            "OOMKilled": true,
+- Remove constraint from Compose make container work again as expected
