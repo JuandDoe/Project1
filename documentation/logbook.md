@@ -2290,4 +2290,13 @@ Successful HTTP request
 > docker inspect dbfcbf5e2be0 | grep OOMKilled
 # → "OOMKilled": true
             "OOMKilled": true,
+-  Exit code 137 is one of the most common container failures, and it almost always means one thing: something killed the process with SIGKILL (signal 9). The math is simple: 128 + 9 = 137
+- In Linux, when a process is killed by a signal, its exit code is 128 plus the signal number. Signal 9 (SIGKILL) cannot be caught or handled by the process. It is an immediate, unconditional termination.
+- https://oneuptime.com/blog/post/2026-02-08-how-to-fix-docker-container-immediately-exiting-with-code-137/view
 - Remove constraint from Compose make container work again as expected
+
+
+---------------------------------------------------------------------------------------------------------------------------------------------
+
+PART 5 
+
