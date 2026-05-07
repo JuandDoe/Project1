@@ -54,6 +54,12 @@ RUN --mount=type=secret,id=gradle_props,target=/usr/app/gradle.properties \
 # Okay got it the image worked fine cause the mavenCentral() fallback, once commented build failed
 # secrets: gradle_props: file: ./gradle.properties was needed in compose to success
 
+RUN addgroup -S crashgroup && adduser -S crashuser -G crashgroup
+RUN cp -r $APP_HOME/src/crashroot $APP_HOME/src/avoid_crashroot \
+    && chown -R crashuser:crashgroup $APP_HOME/src/avoid_crashroot
+USER crashuser
+RUN echo "foo" > $APP_HOME/src/avoid_crashroot/crashroot.txt
+
 # ===== JLINK STAGE =====
 # Defines the second stage named "jre-build".
 # Uses the full Corretto 25 JDK image solely to run jlink and produce a custom JRE.
@@ -118,7 +124,6 @@ RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 # Switches to appuser for all subsequent instructions including ENTRYPOINT.
 # The application runs without root privileges, limiting the impact of any security breach.
 USER appuser
-
 # Documents that the application listens on port $EXPOSED_PORT
 # Does not open the port by itself — requires -p flag at docker run time.
 ARG EXPOSED_PORT=43000

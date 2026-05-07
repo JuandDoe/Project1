@@ -1565,7 +1565,7 @@ Rule of thumb:
 
   For your app specifically: this failure does not happen naturally because your app does not write to disk anywhere. Logback is using its default console appender, your handler returns HTTP responses  
   without persisting anything. To create the failure for Part 4, the cleanest path is to add src/main/resources/logback.xml with a FileAppender writing to something like /usr/app/logs/server.log. The
-  app will fail at startup trying to create the file because /usr/app/ is root-owned (your WORKDIR /usr/app runs before USER appuser). To fix it back: in the Dockerfile, before USER appuser, run mkdir  
+  app will fail at startup trying to create the file because /usr/app/ is root-owned (your WORKDIR /usr/app runs before USER appuser). To fix it back: in the Dockerfile, before USER appus0er, run mkdir  
   -p /usr/app/logs && chown -R appuser:appgroup /usr/app/logs.
 
   The mental model worth keeping: USER switches who runs the process. It does not change who owns the files the process touches. Permission failures inside containers are almost always those two layers being out of step.
@@ -2191,5 +2191,47 @@ appuser, it inherits no ownership of any of that. It can usually read root-owned
 - Then we will switch to our apps and ask him to write "fail" into the crashroot.txt file to make the build fail 
 - Let's google it. Maybe there is other trick
 - Offcial documentation : https://docs.docker.com/build/building/best-practices/
-> Avoid installing or using sudo as it has unpredictable TTY and signal-forwarding behavior that can cause problems. 
-> If you absolutely need functionality similar to sudo, such as initializing the daemon as root but running it as non-root, consider using “gosu”.
+> Did the first fail in purpose of part 4 but I think I need clarification for the 2th
+Container run as non-root but a required directory is owned by root
+
+> By default image variants intended for runtime, run as the nonroot user. 
+> Ensure that necessary files and directories are accessible to the nonroot user. 
+> You may need to copy files to different directories or change permissions so your application running as the nonroot user can access them.
+- source  Docker hardened images repository https://github.com/docker-hardened-images/catalog/blob/main/image/docker/guides.md
+- Said same as Q2 answer
+- During first step (build) we do 
+> COPY src $APP_HOME/src
+-  Lets add crashroot/ folder with crashroot.txt intp /src
+> sudo mkdir crashroot
+> sudo touch crashroot/crashroot.txt
+- Lets veryf ownership 
+> s -l crashroot/crashroot.txt
+-rw-r--r-- 1 root root 0 May  7 00:39 crashroot/crashroot.txt
+ant@127:~/IdeaProjects/1task/src$ ls -l crashroot
+total 0
+-rw-r--r-- 1 root root 0 May  7 00:39 crashroot.txt
+- both folder and file are owned by root
+> COPY src $APP_HOME/src
+RUN addgroup -S crashgroup && adduser -S crashuser -G crashgroup
+USER crashuser
+RUN echo "foo" > $APP_HOME/src/crashroot/crashroot.txt
+- Failed as expect cause we try to write in a file owned by root with a non-root user
+> 57 |     RUN addgroup -S crashgroup && adduser -S crashuser -G crashgroup
+58 |     USER crashuser
+59 | >>> RUN echo "foo" > $APP_HOME/src/crashroot/crashroot.txt
+60 |
+61 |     # ===== JLINK STAGE =====
+failed to solve: process "/bin/sh -c echo \"foo\" > $APP_HOME/src/crashroot/crashroot.txt" did not complete successfully: exit code: 1
+
+- Lets copy recursively the root owned directory and give ownership of this copied directory to the non roo user
+- Then we can write into the copied file of thge copied folder and perform any action on it without root permissions
+> RUN addgroup -S crashgroup && adduser -S crashuser -G crashgroup
+RUN cp -r $APP_HOME/src/crashroot $APP_HOME/src/avoid_crashroot \
+&& chown -R crashuser:crashgroup $APP_HOME/src/avoid_crashroot
+USER crashuser
+RUN echo "foo" > $APP_HOME/src/avoid_crashroot/crashroot.txt
+- Run successfully
+> [+] up 3/3                                                                                                                                                                                               
+✔ Image project1:latest Built                                                                                                                                                                       2.8s
+✔ Network 1task_default Created                                                                                                                                                                     0.0s
+✔ Container 1task-app-1 Created   
