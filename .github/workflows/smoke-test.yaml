@@ -1,6 +1,6 @@
 name: Smoke Test CI
 
-# Append on every push on master branch
+# Append on every push and pull-request on master branch
 on:
   push:
     branches: [ "master" ]
@@ -26,13 +26,12 @@ jobs:
       # STEP 2 : Build image via compose (secrets handled in docker-compose.yml) and smoke test
       - name: Check /test endpoint to catch eventual port mismatch
         run: |
-          # "export" a value change it scope and make the value available for child process
           # $(...) substitution, the output of the expression replace the expression
           # grep "exposedPort" gradle.properties | cut -d'=' -f2
           # Search the line containing "exposedPort" in gradle.properties
           # Pipe the line found then cut the line in fields on delimiter "=" and extract the 2nd field
-          # filed count created by cut command start at one
-          # The first is two positive numbers separated by a <hyphen-minus> (low- high), which represents all fields from the first number to the second number.
+          # field count created by cut command start at one
+          # The first is a positive numbers separated by a <hyphen-minus> (low- high), which represents all fields from the first number to the second number.
           # The second is a positive number preceded by a <hyphen-minus> (- high), which represents all fields from field number 1 to that number.
           # The third is a positive number followed by a <hyphen-minus> ( low-), which represents that number to the last field, inclusive.
           export EXPOSED_PORT=$(grep "exposedPort" gradle.properties | cut -d'=' -f2)

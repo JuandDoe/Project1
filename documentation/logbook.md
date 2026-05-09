@@ -253,7 +253,7 @@ Other log level stay info as I dont have external monitoring or log system. But 
 - The root cause was the toolchain the gradle build system saw does not advertise a JAVA_COMPILER capability
 - I puted myself from shell perspective with javac command and as I saw there was a proper jvm with compilation tool installed I drawed conclusions too fast
 
-- 1) Newt Time i must read message properly the error message and be humble toward him.  NOT REJECTING HYPOTHESIS I HAVEN4T TESTED
+- 1) Next Time I must read message properly the error message and be humble toward him.  NOT REJECTING HYPOTHESIS I HAVEN4T TESTED
 - 2) I need to keep in mind the context/scope i'm working into ( Here : Gradle scope and what Gradle "see")
 
 
@@ -1652,7 +1652,7 @@ build:
       run: docker build . --file Dockerfile --tag my-image-name:$(date +%s)
 
 - It seems to run docker build . --file Dockerfile --tag my-image-name:$(date +%s) for every push on master branch
-- I said to claude that we need to adapt  : If `gradle.example.properties` keys do not match what `build.gradle.kts` expects, the build fails
+- I said to Claude that we need to adapt  : If `gradle.example.properties` keys do not match what `build.gradle.kts` expects, the build fails
 - For building the image we need to provide important information (in our case the credentials ) to GitHub secrets 
 - I added the content of my gradle.properties to a newly created secret repository
 
@@ -1695,7 +1695,7 @@ jobs:
             --tag my-image-name:$(date +%s)
 ```
 - Didn’t understand exactly   uses: actions/checkout@v4
-- Went to the repo, it's an import of an action already coded by GitHub. commented in the YAML just above, and noticed v6 was last available, so I updated
+- Went to the repo, it's an import of an action already coded by GitHub who checkout the repo. commented in the YAML just above, and noticed v6 was last available, so I updated
 - Note : actions must be under .GitHub/workflows folder
 
 - It same to make sense, lets test
@@ -1776,7 +1776,7 @@ Used to aid assessment of whether main functions of the software appear to work 
   environment("APP_PORT", project.findProperty("appPort")?.toString() ?: "42000")
   }
 - So we will be able to test build only ./gradlew run with dynamic syntax
-- Inside my main I know define dynamically the port where java HTTP server run 
+- Inside my main I define dynamically the port where java HTTP server run 
 >int port = Integer.parseInt(System.getenv().getOrDefault("APP_PORT", "42000"));
 - Change EXPOSE 42000 to 
 ># Documents that the application listens on port $EXPOSED_PORT
@@ -2067,11 +2067,13 @@ An error has occurred: InvalidConfigError:
 ==> At key: exclude_types
 =====> Expected array but got 'str'
 Check the log at /home/ant/.cache/pre-commit/pre-commit.log
-- Well..at least now comit anymore
+
+
 > pre-commit install --overwrite
 - Worked. I spent so many hours. Stupid slow brain & memory :(
 - Fuck.. I did shit the other day installing and then moved on 
 - The .git/hooks/pre-commit file was owned by git-secrets. Running pre-commit install --overwrite replaced it with the pre-commit framework runner
+  (Claude said, i'm not really sure what happen. My understanding stop at : there was a conflict between gi-secret installed few days before and git precommit hook )
 - Which now executes all hooks defined in .pre-commit-config.yaml on every commit.
 - But the version of pre-commit will have to be consistent among computers are use or it will be a mess
 > pre_comit --version
@@ -2103,7 +2105,7 @@ pre-commit 3.6.2
 
 - Morning though on this :
 > Well okay I will be a pussy here. I know I should learn basic shell scrip for these kind of tasks seem a mountain tbh
-- Whith a fresh brain, learning along the way some expression, pattern, syntax, it looks a bit less as 1000% ununderstandable traditional Chinese
+- With a fresh brain, learning along the way some expression, pattern, syntax, it looks a bit less as 1000% ununderstandable traditional Chinese
 
 - Looking back at what I did; it doesn't seem as dark/catastrophic as what I thought yesterday
 - 
@@ -2114,7 +2116,7 @@ pre-commit 3.6.2
 - Since we learnt in follow-ups part 3 that good engineers are good cause they can focus on the thing who matter
 - For example my overcomment of pre-commit hook and GA actions give me a deep feeling of roundness. I read them as natural language
 - They can focus on what matter cause they have good tools
-- If we do same mistake again, and again we need a tool
+- If we do same mistake again, and again we need a tool.. but IT STILL VERY DIFFICULT TO GET AN ENVIRONMENT PROBLEM WHEN YOU DONT HAVE A CLUE ITS ONE. I wonder if its a "get caught one time and then you have exprerience for life or if I may have done otherwise"
 - The idea would be a bash script who check version of a given set of tools locally (gradle wrapper, javac, JVM version, git pre-commit version and currently active hook)
 - The script match them against a requirement.txt inside the repo and output in a requirement_check. txt file if anything is missing
 - So when we debug and the problem seem non-trivial we run this script, let say ./realrun and have a simple aggregator to investigate and no blind spots
@@ -2206,8 +2208,8 @@ Container run as non-root but a required directory is owned by root
 -  Lets add crashroot/ folder with crashroot.txt intp /src
 > sudo mkdir crashroot
 > sudo touch crashroot/crashroot.txt
-- Lets veryf ownership 
-> s -l crashroot/crashroot.txt
+- Lets verify ownership inside src/
+> ls -l crashroot/crashroot.txt
 -rw-r--r-- 1 root root 0 May  7 00:39 crashroot/crashroot.txt
 ant@127:~/IdeaProjects/1task/src$ ls -l crashroot
 total 0
@@ -2226,7 +2228,7 @@ RUN echo "foo" > $APP_HOME/src/crashroot/crashroot.txt
 failed to solve: process "/bin/sh -c echo \"foo\" > $APP_HOME/src/crashroot/crashroot.txt" did not complete successfully: exit code: 1
 
 - Lets copy recursively the root owned directory and give ownership of this copied directory to the non roo user
-- Then we can write into the copied file of thge copied folder and perform any action on it without root permissions
+- Then we can write into the copied file of the copied folder and perform any action on it without root permissions
 > RUN addgroup -S crashgroup && adduser -S crashuser -G crashgroup
 RUN cp -r $APP_HOME/src/crashroot $APP_HOME/src/avoid_crashroot \
 && chown -R crashuser:crashgroup $APP_HOME/src/avoid_crashroot
@@ -2254,11 +2256,12 @@ at org.gradle.api.internal.artifacts.repositories.resolver.ExternalResourceResol
 ... 39 more
 Caused by: org.gradle.internal.resource.transport.http.HttpErrorStatusCodeException: Could not GET 'https://repo.repsy.io/mvn/user92137778/project1/org/example/hw_dependencie/1.0.0/hw_dependencie-1.0.0.jar'. Received status code 401 from server:
 
-- The wrong credential password for the repsy repository lead to a build fail cause a needed dependencie cant be fetch and is needed at build time
+- The wrong credential password for the repsy repository lead to a build fail cause a needed dependencies cant be fetch and is needed at build time
 - Switch the variable value to default fix the problem
 - Its misconfiguration who lead to a permission problem cause we dont have the right to access and fetch from the repo when password is wrong
 
-- Container uses too much memory and becomes slow or unstable.
+- Container uses too much memory and becomes slow or unstable
+
 - We will have to find a way to limitate drasticaly the computer ram usage
   https://docs.docker.com/engine/containers/resource_constraints/
 - The maximum amount of memory the container can use. If you set this option, the minimum allowed value is 6m (6 megabytes). 

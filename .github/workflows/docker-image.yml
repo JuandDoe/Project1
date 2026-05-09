@@ -1,6 +1,6 @@
 name: Docker Image CI
 
-# Append on every push on master branch
+# Append on every push and pull-request on master branch
 on:
   push:
     branches: [ "master" ]
@@ -10,8 +10,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    # Its NO a docker image. A runner is a complet VM. The VM from github run on Microsoft Azure cloud Ubuntu 24.04
-    # Ubuntu 24.04	ubuntu-latest or ubuntu-24.04
+    # Its NO a docker image. A runner is a complete VM. The VM from GitHub run on Microsoft Azure cloud Ubuntu 24.04
+    # Ubuntu 24.04	is actual ubuntu-latest
     # https://github.com/actions/runner-images
     steps:
       - uses: actions/checkout@v6
@@ -23,7 +23,7 @@ jobs:
         run: |
           cp gradle.example.properties gradle.properties
           ./gradlew help --no-daemon
-        # | denote literal style, it allows to keep "\n" character so multiline command run can be performed in YAML
+        # | denote literal style, it allows to keep "\n" character and ignore them so multiline command run can be performed in YAML
 
       # STEP 2 : Docker build (Using GH Secrets)
       # Put the content of the GH secret GRADLE_PROPERTIES into gradle.properties

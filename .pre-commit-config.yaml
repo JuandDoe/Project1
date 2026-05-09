@@ -1,6 +1,6 @@
 repos:
   -   repo: local
-      # Source list for hook. here they come from local repo, no dowloaded from GH
+      # Source list for hook. here they come from local repo, no downloaded from GH
       hooks:
         -   id: block-gradle-properties
             # Allow CLI usage of a given hook

@@ -13,7 +13,7 @@ services:
       - "${EXPOSED_PORT:-43000}:${APP_PORT:-42000}"
       # -VALUE is a bash variable substitution: if the variable is not set (or empty), the default value is used
 
-# Secret declaration : it's a file located on host
+# Secret declaration
 secrets:
   gradle_props:
     file: ./gradle.properties
